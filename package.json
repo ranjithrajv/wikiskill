@@ -6,6 +6,12 @@
     "wikiskill": "./dist/cli.mjs"
   },
   "type": "module",
+  "files": [
+    "dist",
+    "src",
+    "skills",
+    "scripts/postinstall.mjs"
+  ],
   "exports": {
     ".": "./src/adapters/opencode/index.ts",
     "./rpc": "./src/adapters/opencode/rpc.ts",
@@ -19,7 +25,8 @@
     "typecheck": "vp check --typecheck",
     "lint": "vp lint",
     "fmt": "vp fmt",
-    "prepack": "vp pack"
+    "prepack": "vp pack",
+    "postinstall": "node ./scripts/postinstall.mjs"
   },
   "dependencies": {
     "@opencode-ai/plugin": "beta"

@@ -23,7 +23,7 @@ Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Sk
 
 ## What It Does
 
-Your OpenCode agent makes mistakes. WikiSkill remembers them — and turns them into better skills over time.
+Your coding agent makes mistakes. WikiSkill remembers them — and turns them into better skills over time.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -44,51 +44,42 @@ Your OpenCode agent makes mistakes. WikiSkill remembers them — and turns them 
 
 ## Install
 
-Pick the adapter for your harness. All three share one npm package.
-
 ```sh
 npm install --save-dev opencode-wikiskill
 ```
 
-### OpenCode
+That's it for Claude Code and Codex CLI — a `postinstall` hook detects
+whichever harness is already configured in your project (a `.claude/` dir,
+an `AGENTS.md`) and finishes wiring it automatically: hooks, custom
+commands/prompts, all of it. It never invents a harness config that wasn't
+already there, so nothing happens on a project with none of these yet — for
+that case, or to force a specific one, run:
 
-Add to your project's `opencode.jsonc`:
+```sh
+npx wikiskill init --claude-code   # or --codex, --opencode, --all
+```
+
+OpenCode needs one manual step regardless (`opencode.jsonc` is JSONC —
+comments included — so `init` checks it but won't auto-edit it): add
+`"opencode-wikiskill"` to your plugins array —
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": [
-    {
-      "package": "opencode-wikiskill",
-      "options": { "sampleSize": 20, "maxIterations": 10 },
-    },
-  ],
+  "plugins": [{ "package": "opencode-wikiskill", "options": { "sampleSize": 20, "maxIterations": 10 } }],
 }
 ```
 
-Or clone directly into your project:
+Re-running `npx wikiskill init` any time (or another `npm install`) is safe —
+it only fills in what's missing.
 
-```sh
-git clone https://github.com/ranjithrajv/opencode-wikiskill.git .opencode/plugins/wikiskill
-```
+| Harness | What `init` wires |
+|---|---|
+| **Claude Code** | `.claude/settings.json` `PostToolUse` hook (trace capture) + `.claude/commands/wiki-{evolve,status,reset}.md` |
+| **Codex CLI** | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md` |
+| **OpenCode** | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing |
 
-Traces are captured automatically via a tool hook; `/wiki-evolve`, `/wiki-status`, `/wiki-reset` are registered as native commands.
-
-### Claude Code
-
-1. Merge `node_modules/opencode-wikiskill/src/adapters/claude-code/templates/settings.hooks.json` into your project's `.claude/settings.json` (wires trace capture to a `PostToolUse` hook).
-2. Copy `.../claude-code/templates/commands/*.md` into your project's `.claude/commands/` (adds `/wiki-evolve`, `/wiki-status`, `/wiki-reset`).
-3. `skills/wikiskill/SKILL.md` loads automatically — Claude Code reads project skills natively.
-
-Full details: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md).
-
-### Codex CLI
-
-1. Append `node_modules/opencode-wikiskill/src/adapters/codex/templates/AGENTS.wikiskill.md` to your project's `AGENTS.md` (Codex has no tool-call hook, so tracing is self-instrumented — the agent logs its own calls).
-2. Copy `.../codex/templates/prompts/*.md` into your project's `.codex/prompts/` (adds `/wiki-evolve`, `/wiki-status`, `/wiki-reset`).
-3. `skills/wikiskill/SKILL.md` loads automatically — Codex CLI supports Skills the same way.
-
-Full details: [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
+Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
 
 ---
 
@@ -138,9 +129,9 @@ Full details: [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
 
 | Layer      | Directory                     | Purpose                                   | Mutability            |
 | ---------- | ----------------------------- | ----------------------------------------- | --------------------- |
-| **Raw**    | `.opencode/wikiskill/raw/`    | Execution traces from tool calls          | Immutable             |
-| **Wiki**   | `.opencode/wikiskill/wiki/`   | Persistent patterns, logs, impact tracker | **Never rolled back** |
-| **Skills** | `.opencode/wikiskill/skills/` | Evolved procedural instructions           | Updated with gating   |
+| **Raw**    | `.wikiskill/raw/`    | Execution traces from tool calls          | Immutable             |
+| **Wiki**   | `.wikiskill/wiki/`   | Persistent patterns, logs, impact tracker | **Never rolled back** |
+| **Skills** | `.wikiskill/skills/` | Evolved procedural instructions           | Updated with gating   |
 
 ### The Wiki Never Forgets
 

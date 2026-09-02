@@ -22,7 +22,9 @@ import {
   writeState,
   buildEvolutionPrompt,
   buildStatusText,
+  runInit,
   type TraceEntry,
+  type Harness,
 } from "../core/index.js";
 import * as fs from "node:fs/promises";
 
@@ -167,6 +169,44 @@ async function cmdReset(args: string[]): Promise<void> {
   console.log("✅ WikiSkill state reset. Wiki patterns and raw traces are preserved.");
 }
 
+const FORCE_FLAGS: Record<string, Harness> = {
+  "--opencode": "opencode",
+  "--claude-code": "claude-code",
+  "--codex": "codex",
+};
+const ALL_HARNESSES: Harness[] = ["opencode", "claude-code", "codex"];
+
+/**
+ * Wire whichever harnesses are already configured in the project (safe to
+ * run unattended, e.g. from `postinstall` — it only completes wiring for a
+ * harness whose own config already exists, never invents one). Pass
+ * --opencode / --claude-code / --codex / --all to force-bootstrap a harness
+ * from scratch on a fresh project.
+ */
+async function cmdInit(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const quiet = args.includes("--quiet");
+  const force: Harness[] = args.includes("--all")
+    ? ALL_HARNESSES
+    : args.filter((a): a is keyof typeof FORCE_FLAGS => a in FORCE_FLAGS).map((a) => FORCE_FLAGS[a]);
+
+  const { harnesses, changes } = await runInit(projectDir, force);
+
+  if (quiet && changes.length === 0) return;
+  if (harnesses.length === 0) {
+    if (!quiet) {
+      console.log(
+        "[wikiskill] No harness config detected (.claude/, AGENTS.md, .codex/, opencode.jsonc).\n" +
+          "Run with --claude-code, --codex, --opencode, or --all to wire one explicitly.",
+      );
+    }
+    return;
+  }
+  console.log(`[wikiskill] init: ${harnesses.join(", ")}`);
+  for (const c of changes) console.log(`  - ${c}`);
+  if (changes.length === 0) console.log("  (already wired, nothing to do)");
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -182,9 +222,11 @@ async function main(): Promise<void> {
       return cmdEvolveComplete(rest);
     case "reset":
       return cmdReset(rest);
+    case "init":
+      return cmdInit(rest);
     default:
       console.error(
-        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|evolve-complete|reset> [--project DIR]",
+        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|evolve-complete|reset|init> [--project DIR]",
       );
       process.exitCode = 1;
   }
