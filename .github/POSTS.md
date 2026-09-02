@@ -13,11 +13,12 @@ Copy-paste ready for various platforms.
 I turned the WikiSkill paper (Tang et al., Google Research 2026) into an OpenCode plugin. The idea: instead of forgetting what went wrong after each task, your agent accumulates patterns in a persistent wiki and evolves better skills over time.
 
 Three-layer architecture:
+
 - Raw Layer: immutable execution traces from every tool call
 - Wiki Layer: persistent patterns (failure modes + success strategies) that never roll back
 - Skills Layer: evolved procedural knowledge, updated only when validation improves
 
-The key insight from the paper: even when a skill edit fails, the *lesson* persists in the wiki. Knowledge compounds.
+The key insight from the paper: even when a skill edit fails, the _lesson_ persists in the wiki. Knowledge compounds.
 
 Repo: https://github.com/ranjithrajv/opencode-wikiskill
 Paper: https://arxiv.org/abs/2608.27454
@@ -35,6 +36,7 @@ Works with any OpenCode project — just add to opencode.jsonc and type /wiki-ev
 The WikiSkill paper from Google Research shows that agents can co-evolve skills with a persistent knowledge base. I implemented it as an OpenCode plugin.
 
 How it works:
+
 1. Your agent works normally — every tool call is traced
 2. Run /wiki-evolve — it analyzes traces, finds failure patterns, proposes skill edits
 3. Gating validates: accept if score improves, rollback if not

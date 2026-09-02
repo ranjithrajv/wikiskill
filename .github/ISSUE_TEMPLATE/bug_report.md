@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Something isn't working correctly
-title: ''
+title: ""
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 **Describe the bug**
@@ -11,11 +11,13 @@ A clear description of what went wrong.
 
 **To Reproduce**
 Steps:
+
 1. Run `/wiki-evolve` after...
 2. Expected: ...
 3. Actual: ...
 
 **Environment**
+
 - OpenCode version:
 - Node version:
 - OS:

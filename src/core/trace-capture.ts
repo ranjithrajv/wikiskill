@@ -13,11 +13,9 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { TraceEntry } from "./types.js";
+import { tracesRoot } from "./paths.js";
 
-/** Directory where raw traces are stored. */
-export function tracesRoot(projectDir: string): string {
-  return path.join(projectDir, ".opencode", "wikiskill", "raw");
-}
+export { tracesRoot };
 
 /** Ensure the traces directory exists. */
 export async function ensureTraces(root: string): Promise<void> {

@@ -3,13 +3,15 @@ import { defineConfig } from "vite-plus";
 /// <reference types="vite-plus/types" />
 
 export default defineConfig({
-  // ─── Build / Pack ───────────────────────────────────────────────────────────
+  // ─── Pack ───────────────────────────────────────────────────────────────────
   // tsdown (via Rolldown) for building the distributable plugin bundle.
-  build: {
+  pack: {
     // This is a Node.js plugin — not a browser app.
     target: "node20",
-    // Entry point for the distributable build.
-    entry: "src/index.ts",
+    // Entry points for the distributable build: the OpenCode plugin and the
+    // shared CLI adapter used by Claude Code and Codex (other adapters can
+    // add entries the same way).
+    entry: ["src/adapters/opencode/index.ts", "src/adapters/cli.ts"],
     // Output format: ESM for OpenCode's plugin system.
     format: "esm",
     // Generate declaration files for consumers.

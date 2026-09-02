@@ -1,10 +1,19 @@
-# WikiSkill for OpenCode
+# WikiSkill
 
 > Co-evolve agent skills with a persistent knowledge base — agents that learn from their mistakes.
 
 [![arXiv](https://img.shields.io/badge/arXiv-2608.27454-b31b1b.svg)](https://arxiv.org/abs/2608.27454)
 [![License](https://img.shields.io/badge/license-CC%20BY%204.0-green.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![OpenCode](https://img.shields.io/badge/OpenCode-plugin-blue.svg)](https://opencode.ai)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-adapter-blue.svg)](https://claude.ai/code)
+[![Codex CLI](https://img.shields.io/badge/Codex%20CLI-adapter-blue.svg)](https://developers.openai.com/codex)
+
+Harness-agnostic by design: the evolution engine (`src/core/`) is plain
+filesystem + prompt text with zero framework dependencies. Three adapters
+wire it into the harness's own hook/command mechanism — **OpenCode** (native
+plugin), **Claude Code** (hooks + slash commands), and **Codex CLI**
+(AGENTS.md + custom prompts). Same `.wikiskill/` storage, same
+`skills/wikiskill/SKILL.md`, portable across all three.
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
@@ -29,11 +38,19 @@ Your OpenCode agent makes mistakes. WikiSkill remembers them — and turns them 
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Key insight from the paper:** Knowledge compounds. Even when a skill edit fails, the *lesson* persists in the wiki so future iterations don't repeat the same mistake.
+**Key insight from the paper:** Knowledge compounds. Even when a skill edit fails, the _lesson_ persists in the wiki so future iterations don't repeat the same mistake.
 
 ---
 
 ## Install
+
+Pick the adapter for your harness. All three share one npm package.
+
+```sh
+npm install --save-dev opencode-wikiskill
+```
+
+### OpenCode
 
 Add to your project's `opencode.jsonc`:
 
@@ -42,13 +59,10 @@ Add to your project's `opencode.jsonc`:
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     {
-      "package": "/path/to/opencode-wikiskill",
-      "options": {
-        "sampleSize": 20,
-        "maxIterations": 10
-      }
-    }
-  ]
+      "package": "opencode-wikiskill",
+      "options": { "sampleSize": 20, "maxIterations": 10 },
+    },
+  ],
 }
 ```
 
@@ -58,11 +72,29 @@ Or clone directly into your project:
 git clone https://github.com/ranjithrajv/opencode-wikiskill.git .opencode/plugins/wikiskill
 ```
 
+Traces are captured automatically via a tool hook; `/wiki-evolve`, `/wiki-status`, `/wiki-reset` are registered as native commands.
+
+### Claude Code
+
+1. Merge `node_modules/opencode-wikiskill/src/adapters/claude-code/templates/settings.hooks.json` into your project's `.claude/settings.json` (wires trace capture to a `PostToolUse` hook).
+2. Copy `.../claude-code/templates/commands/*.md` into your project's `.claude/commands/` (adds `/wiki-evolve`, `/wiki-status`, `/wiki-reset`).
+3. `skills/wikiskill/SKILL.md` loads automatically — Claude Code reads project skills natively.
+
+Full details: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md).
+
+### Codex CLI
+
+1. Append `node_modules/opencode-wikiskill/src/adapters/codex/templates/AGENTS.wikiskill.md` to your project's `AGENTS.md` (Codex has no tool-call hook, so tracing is self-instrumented — the agent logs its own calls).
+2. Copy `.../codex/templates/prompts/*.md` into your project's `.codex/prompts/` (adds `/wiki-evolve`, `/wiki-status`, `/wiki-reset`).
+3. `skills/wikiskill/SKILL.md` loads automatically — Codex CLI supports Skills the same way.
+
+Full details: [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
+
 ---
 
 ## Quickstart
 
-1. **Work normally** — use OpenCode as you always do. Traces are captured automatically.
+1. **Work normally** — traces are captured automatically (OpenCode, Claude Code) or self-logged per your AGENTS.md instructions (Codex).
 2. **Run evolution** — type `/wiki-evolve` in any session.
 3. **Check status** — type `/wiki-status` to see patterns, traces, and scores.
 4. **Repeat** — each iteration makes your agent a little smarter.
@@ -81,22 +113,22 @@ git clone https://github.com/ranjithrajv/opencode-wikiskill.git .opencode/plugin
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
+| Command        | Description                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------- |
 | `/wiki-evolve` | Run one evolution iteration: analyze traces → update wiki → propose skill → validate → gate |
-| `/wiki-status` | Show evolution statistics, patterns, and logs |
-| `/wiki-reset` | Reset evolution state (preserves wiki patterns) |
+| `/wiki-status` | Show evolution statistics, patterns, and logs                                               |
+| `/wiki-reset`  | Reset evolution state (preserves wiki patterns)                                             |
 
 ---
 
 ## Configuration
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `sampleSize` | `number` | `20` | Traces sampled per iteration for the Wiki Maintainer |
-| `maxPatterns` | `number` | `100` | Maximum patterns before pruning |
-| `maxIterations` | `number` | `10` | Maximum evolution iterations before requiring reset |
-| `verbose` | `boolean` | `false` | Enable verbose logging |
+| Option          | Type      | Default | Description                                          |
+| --------------- | --------- | ------- | ---------------------------------------------------- |
+| `sampleSize`    | `number`  | `20`    | Traces sampled per iteration for the Wiki Maintainer |
+| `maxPatterns`   | `number`  | `100`   | Maximum patterns before pruning                      |
+| `maxIterations` | `number`  | `10`    | Maximum evolution iterations before requiring reset  |
+| `verbose`       | `boolean` | `false` | Enable verbose logging                               |
 
 ---
 
@@ -104,15 +136,15 @@ git clone https://github.com/ranjithrajv/opencode-wikiskill.git .opencode/plugin
 
 ### Three-Layer Architecture
 
-| Layer | Directory | Purpose | Mutability |
-|-------|-----------|---------|-----------|
-| **Raw** | `.opencode/wikiskill/raw/` | Execution traces from tool calls | Immutable |
-| **Wiki** | `.opencode/wikiskill/wiki/` | Persistent patterns, logs, impact tracker | **Never rolled back** |
-| **Skills** | `.opencode/wikiskill/skills/` | Evolved procedural instructions | Updated with gating |
+| Layer      | Directory                     | Purpose                                   | Mutability            |
+| ---------- | ----------------------------- | ----------------------------------------- | --------------------- |
+| **Raw**    | `.opencode/wikiskill/raw/`    | Execution traces from tool calls          | Immutable             |
+| **Wiki**   | `.opencode/wikiskill/wiki/`   | Persistent patterns, logs, impact tracker | **Never rolled back** |
+| **Skills** | `.opencode/wikiskill/skills/` | Evolved procedural instructions           | Updated with gating   |
 
 ### The Wiki Never Forgets
 
-Even when a skill edit is rejected by the gating mechanism, the *knowledge* of why it failed persists in the wiki. This is the core insight from the paper — knowledge compounds across iterations.
+Even when a skill edit is rejected by the gating mechanism, the _knowledge_ of why it failed persists in the wiki. This is the core insight from the paper — knowledge compounds across iterations.
 
 ### Inference Agent ≠ Evolution Agent
 
@@ -125,23 +157,23 @@ During normal work, your agent only sees evolved **skills** — not the raw wiki
 Other plugins and clients can interact with WikiSkill:
 
 ```ts
-import { WikiSkill } from "opencode-wikiskill/rpc"
+import { WikiSkill } from "opencode-wikiskill/rpc";
 
-const wikiskill = client.rpc(WikiSkill)
+const wikiskill = client.rpc(WikiSkill);
 
 // Get current status
-const status = await wikiskill.status()
+const status = await wikiskill.status();
 // { iteration: 3, bestScore: 0.82, evolving: false, patternCount: 7, traceCount: 45 }
 
 // Trigger evolution
-const result = await wikiskill.evolve({ sampleSize: 20 })
+const result = await wikiskill.evolve({ sampleSize: 20 });
 
 // List patterns
-const { patterns } = await wikiskill.patterns()
+const { patterns } = await wikiskill.patterns();
 
 // Subscribe to events
 for await (const event of wikiskill.events.subscribe("evolution_completed")) {
-  console.log(`Iteration ${event.data.iteration}: score=${event.data.score}`)
+  console.log(`Iteration ${event.data.iteration}: score=${event.data.score}`);
 }
 ```
 
@@ -179,12 +211,12 @@ If you use this plugin in research, cite the original paper:
 
 ## Related Work
 
-| Paper | Key Idea | Link |
-|-------|----------|------|
-| **EvoSkill** | Self-evolving skill discovery via failure analysis | [arXiv:2603.02766](https://arxiv.org/abs/2603.02766) |
-| **SkillOpt** | Skill docs as trainable parameters | [arXiv:2605.23904](https://arxiv.org/abs/2605.23904) |
-| **Trace2Skill** | Parallel trajectory distillation into skills | [arXiv:2603.25158](https://arxiv.org/abs/2603.25158) |
-| **Karpathy's LLM Wiki** | Compounding knowledge concept (inspiration) | [Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) |
+| Paper                   | Key Idea                                           | Link                                                                      |
+| ----------------------- | -------------------------------------------------- | ------------------------------------------------------------------------- |
+| **EvoSkill**            | Self-evolving skill discovery via failure analysis | [arXiv:2603.02766](https://arxiv.org/abs/2603.02766)                      |
+| **SkillOpt**            | Skill docs as trainable parameters                 | [arXiv:2605.23904](https://arxiv.org/abs/2605.23904)                      |
+| **Trace2Skill**         | Parallel trajectory distillation into skills       | [arXiv:2603.25158](https://arxiv.org/abs/2603.25158)                      |
+| **Karpathy's LLM Wiki** | Compounding knowledge concept (inspiration)        | [Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) |
 
 ---
 

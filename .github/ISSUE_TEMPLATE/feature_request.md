@@ -1,9 +1,9 @@
 ---
 name: Feature request
 about: Suggest an improvement
-title: ''
+title: ""
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 **What would you like to see?**

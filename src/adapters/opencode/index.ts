@@ -23,11 +23,25 @@
 
 import { Plugin } from "@opencode-ai/plugin";
 import * as fs from "node:fs/promises";
-import * as path from "node:path";
-import type { PluginState, WikiSkillOptions } from "./types.js";
-import { INITIAL_STATE, DEFAULT_OPTIONS, serializeState, deserializeState } from "./types.js";
-import { wikiRoot, ensureWiki, listPatterns, readEvolutionLog } from "./wiki-manager.js";
-import { tracesRoot, ensureTraces, appendTrace, traceStats, pruneTraces } from "./trace-capture.js";
+import type { PluginState, WikiSkillOptions } from "../../core/types.js";
+import {
+  INITIAL_STATE,
+  DEFAULT_OPTIONS,
+  serializeState,
+  deserializeState,
+  wikiRoot,
+  tracesRoot,
+  skillsRoot,
+  ensureWiki,
+  listPatterns,
+  readEvolutionLog,
+  ensureTraces,
+  appendTrace,
+  traceStats,
+  pruneTraces,
+  buildEvolutionPrompt,
+  buildStatusText,
+} from "../../core/index.js";
 
 export default Plugin.define({
   id: "wikiskill",
@@ -43,7 +57,7 @@ export default Plugin.define({
     // Resolve directories
     const wikiDir = wikiRoot(projectDir);
     const rawDir = tracesRoot(projectDir);
-    const skillsDir = path.join(projectDir, ".opencode", "wikiskill", "skills");
+    const skillsDir = skillsRoot(projectDir);
 
     // Ensure filesystem exists
     await ensureWiki(wikiDir);
@@ -124,25 +138,21 @@ export default Plugin.define({
           const patterns = await listPatterns(wikiDir);
           const log = await readEvolutionLog(wikiDir);
 
-          const statusText = [
-            `## WikiSkill Status`,
-            ``,
-            `| Metric | Value |`,
-            `|--------|-------|`,
-            `| Iteration | ${state.iteration}/${opts.maxIterations} |`,
-            `| Best Score | ${state.bestScore.toFixed(3)} |`,
-            `| Patterns | ${patterns.length} |`,
-            `| Traces | ${stats.totalTraces} (${stats.sessions} sessions) |`,
-            `| Success Rate | ${(stats.successRate * 100).toFixed(1)}% |`,
-            `| Proposals Accepted | ${state.impactHistory.filter((h) => h.outcome === "accepted").length} |`,
-            `| Proposals Rejected | ${state.impactHistory.filter((h) => h.outcome === "rejected").length} |`,
-            ``,
-            `### Recent Patterns`,
-            ...patterns.slice(-5).map((p) => `- **${p.title}** (${p.category})`),
-            ``,
-            `### Evolution Log (last 500 chars)`,
-            log.slice(-500),
-          ].join("\n");
+          const statusText = buildStatusText({
+            iteration: state.iteration,
+            maxIterations: opts.maxIterations,
+            bestScore: state.bestScore,
+            patternCount: patterns.length,
+            totalTraces: stats.totalTraces,
+            sessions: stats.sessions,
+            successRate: stats.successRate,
+            accepted: state.impactHistory.filter((h) => h.outcome === "accepted").length,
+            rejected: state.impactHistory.filter((h) => h.outcome === "rejected").length,
+            recentPatterns: patterns
+              .slice(-5)
+              .map((p) => ({ title: p.title, category: p.category })),
+            logTail: log,
+          });
 
           await ctx.session.prompt({
             sessionID,
@@ -195,48 +205,6 @@ export default Plugin.define({
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Build the evolution loop prompt for the session. */
-function buildEvolutionPrompt(iteration: number, projectDir: string, sampleSize: number): string {
-  return `You are running WikiSkill evolution iteration ${iteration}.
-
-Project directory: ${projectDir}
-Sample size for trace analysis: ${sampleSize}
-
-Execute these steps IN ORDER:
-
-## Step 1: Wiki Maintainer — Analyze Traces
-Read the execution traces in \`${projectDir}/.opencode/wikiskill/raw/\` and analyze them:
-- Identify recurring FAILURE patterns and their root causes
-- Identify SUCCESSFUL strategies worth codifying
-- For each pattern, create a markdown file in \`${projectDir}/.opencode/wikiskill/wiki/patterns/\`
-  - Filename: \`<category>-<slug>.md\` (e.g., \`failure-file-not-found.md\`)
-  - Include: Category, Description, Actionable, Evidence sections
-- Update \`${projectDir}/.opencode/wikiskill/wiki/index.md\` with all current patterns
-- Append a timestamped entry to \`${projectDir}/.opencode/wikiskill/wiki/logs.md\`
-
-## Step 2: Skill Proposer — Propose Skill Update
-Based on the wiki patterns:
-- Check \`${projectDir}/.opencode/wikiskill/wiki/skill-impact.md\` to avoid re-proposing failed edits
-- Propose ONE focused skill improvement
-- Create or update a skill file in \`${projectDir}/.opencode/wikiskill/skills/\` with frontmatter
-- Each skill should be a SKILL.md-style file with name, description, and workflow steps
-
-## Step 3: Validation Self-Check
-Evaluate your proposed skill against the wiki patterns:
-- Does it address a documented failure pattern?
-- Are instructions concrete and actionable?
-- Is it more than a trivial change?
-
-## Step 4: Record Impact
-Append a row to \`${projectDir}/.opencode/wikiskill/wiki/skill-impact.md\`:
-\`| ${iteration} | <skill-name> | <score> | <best> | <accepted|rejected> |\`
-
-## Step 5: Clean Up
-Prune old trace files in \`${projectDir}/.opencode/wikiskill/raw/\`, keeping only the 3 most recent batches.
-
-Work autonomously through all steps. Use the filesystem tools to read and write files.`;
-}
-
 /**
  * Parse the Wiki Maintainer's LLM output and apply it to the wiki.
  *
@@ -265,13 +233,13 @@ async function _applyMaintainerOutputFromLLM(projectDir: string, output: string)
     const id = `${category}-${slug}`;
 
     const patternContent = `# ${title}\n\nCategory: ${category}\n\n${content}`;
-    const { writePattern } = await import("./wiki-manager.js");
+    const { writePattern } = await import("../../core/wiki-manager.js");
     await writePattern(root, `${id}.md`, patternContent);
     created++;
   }
 
   if (created > 0) {
-    const { rebuildIndex } = await import("./wiki-manager.js");
+    const { rebuildIndex } = await import("../../core/wiki-manager.js");
     await rebuildIndex(root);
   }
 }

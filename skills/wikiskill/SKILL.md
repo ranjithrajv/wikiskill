@@ -17,7 +17,7 @@ You have access to a **persistent knowledge base** (wiki) that accumulates patte
 
 ## Wiki Structure
 
-The wiki lives at `.opencode/wikiskill/` and contains:
+The wiki lives at `.wikiskill/` and contains:
 
 | Directory              | Purpose                                         | Mutability                     |
 | ---------------------- | ----------------------------------------------- | ------------------------------ |
@@ -33,14 +33,14 @@ The wiki lives at `.opencode/wikiskill/` and contains:
 ### Review Wiki Patterns
 
 ```
-Read .opencode/wikiskill/wiki/index.md to see all documented patterns.
-Read individual patterns in .opencode/wikiskill/wiki/patterns/<id>.md.
+Read .wikiskill/wiki/index.md to see all documented patterns.
+Read individual patterns in .wikiskill/wiki/patterns/<id>.md.
 ```
 
 ### Check What's Been Tried
 
 ```
-Read .opencode/wikiskill/wiki/skill-impact.md to see past proposals and outcomes.
+Read .wikiskill/wiki/skill-impact.md to see past proposals and outcomes.
 Avoid re-proposing edits that were previously rejected.
 ```
 
@@ -48,7 +48,7 @@ Avoid re-proposing edits that were previously rejected.
 
 If you observe a recurring pattern during your work:
 
-1. Create a new file in `.opencode/wikiskill/wiki/patterns/`
+1. Create a new file in `.wikiskill/wiki/patterns/`
 2. Use the format:
 
 ```markdown
@@ -69,7 +69,7 @@ Category: <failure|success|strategy>
 - <Observation that supports this pattern>
 ```
 
-3. Update `.opencode/wikiskill/wiki/index.md` with the new pattern
+3. Update `.wikiskill/wiki/index.md` with the new pattern
 
 ### Evolve Skills
 

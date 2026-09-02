@@ -2,10 +2,14 @@
   "name": "opencode-wikiskill",
   "version": "0.1.0",
   "description": "WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution — OpenCode plugin",
+  "bin": {
+    "wikiskill": "./dist/cli.mjs"
+  },
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./rpc": "./src/rpc.ts"
+    ".": "./src/adapters/opencode/index.ts",
+    "./rpc": "./src/adapters/opencode/rpc.ts",
+    "./core": "./src/core/index.ts"
   },
   "scripts": {
     "dev": "vp dev",

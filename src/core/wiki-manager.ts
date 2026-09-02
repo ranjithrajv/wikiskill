@@ -9,11 +9,9 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { WikiPattern, SkillImpactRecord } from "./types.js";
+import { wikiRoot } from "./paths.js";
 
-/** Resolve the wiki root directory for a given project. */
-export function wikiRoot(projectDir: string): string {
-  return path.join(projectDir, ".opencode", "wikiskill", "wiki");
-}
+export { wikiRoot };
 
 /** Ensure all wiki directories exist. */
 export async function ensureWiki(root: string): Promise<void> {
