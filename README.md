@@ -8,6 +8,8 @@
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
+![WikiSkill Demo](https://github.com/ranjithrajv/opencode-wikiskill/raw/main/assets/wikiskill-demo.gif)
+
 ---
 
 ## What It Does
