@@ -65,6 +65,13 @@ export interface PluginState {
   evolving: boolean;
   /** Impact history for all proposals. */
   impactHistory: SkillImpactRecord[];
+  /**
+   * sha256 of each skills/*.md file's content, taken right before the Skill
+   * Proposer runs. `wikiskill validate` diffs the current skills dir against
+   * this to find exactly which file(s) the proposer touched, without needing
+   * the proposer to report its own target back out-of-band.
+   */
+  skillSnapshot: Record<string, string>;
 }
 
 /** PluginState as a JSON-compatible record for storage. */
@@ -74,6 +81,7 @@ export function serializeState(state: PluginState): Record<string, unknown> {
     iteration: state.iteration,
     evolving: state.evolving,
     impactHistory: state.impactHistory,
+    skillSnapshot: state.skillSnapshot,
   };
 }
 
@@ -85,6 +93,7 @@ export function deserializeState(record: Record<string, unknown> | undefined): P
     iteration: (record.iteration as number) ?? 0,
     evolving: (record.evolving as boolean) ?? false,
     impactHistory: (record.impactHistory as SkillImpactRecord[]) ?? [],
+    skillSnapshot: (record.skillSnapshot as Record<string, string>) ?? {},
   };
 }
 
@@ -94,6 +103,7 @@ export const INITIAL_STATE: PluginState = {
   iteration: 0,
   evolving: false,
   impactHistory: [],
+  skillSnapshot: {},
 };
 
 /** WikiSkill configuration options. */

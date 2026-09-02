@@ -8,6 +8,8 @@ export * from "./types.js";
 export * from "./state.js";
 export * from "./init.js";
 export * from "./discover.js";
+export * from "./runner.js";
+export * from "./bench.js";
 export * from "./wiki-manager.js";
 export * from "./trace-capture.js";
 export * from "./gating.js";

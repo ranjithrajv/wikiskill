@@ -8,6 +8,7 @@
 // read/write files can run this loop — that's what makes the format portable.
 
 import { wikiRoot, tracesRoot, skillsRoot } from "./paths.js";
+import { benchRoot } from "./bench.js";
 
 /** Build the evolution loop prompt for a given project and iteration. */
 export function buildEvolutionPrompt(
@@ -18,6 +19,7 @@ export function buildEvolutionPrompt(
   const raw = tracesRoot(projectDir);
   const wiki = wikiRoot(projectDir);
   const skills = skillsRoot(projectDir);
+  const bench = benchRoot(projectDir);
 
   return `You are running WikiSkill evolution iteration ${iteration}.
 
@@ -43,20 +45,25 @@ Based on the wiki patterns:
 - Create or update a skill file in \`${skills}/\` with frontmatter
 - Each skill should be a SKILL.md-style file with name, description, and workflow steps
 
-## Step 3: Validation Self-Check
-Evaluate your proposed skill against the wiki patterns:
-- Does it address a documented failure pattern?
-- Are instructions concrete and actionable?
-- Is it more than a trivial change?
+## Step 3: Validate — do NOT self-score
+Run \`npx wikiskill validate\`. This is a real held-out gate, not a self-report:
+it runs every task in \`${bench}/<task-id>/\` headlessly with your
+proposed skill installed, scores the pass rate (R_val), and accepts only if
+R_val is strictly better than the best score seen so far (R_best) — otherwise
+it rolls the skill back automatically. It also appends the real outcome to
+\`${wiki}/skill-impact.md\` and closes out this iteration for you (Steps 4-5
+below happen inside \`validate\`, not by hand).
 
-## Step 4: Record Impact
-Append a row to \`${wiki}/skill-impact.md\`:
-\`| ${iteration} | <skill-name> | <score> | <best> | <accepted|rejected> |\`
+If \`validate\` reports no bench tasks are configured yet, there is nothing to
+gate this iteration — leave the proposed skill as-is and mention to the user
+that adding tasks under \`.wikiskill/bench/<task-id>/{task.md,verify}\` would
+let it validate for real next time.
 
-## Step 5: Clean Up
-Prune old trace files in \`${raw}/\`, keeping only the 3 most recent batches.
+## Step 4: Record Impact (handled by \`validate\`)
+## Step 5: Clean Up (handled by \`validate\`)
 
-Work autonomously through all steps. Use the filesystem tools to read and write files.`;
+Do not edit \`${wiki}/skill-impact.md\` yourself, and do not run \`wikiskill evolve-complete\`
+after a successful \`validate\` — it already did that.`;
 }
 
 /** Build the status report text for a given project's evolution state. */

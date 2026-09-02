@@ -16,6 +16,7 @@ import { wikiRoot, ensureWiki, readSkillImpact } from "./wiki-manager.js";
 import { tracesRoot, readTraces } from "./trace-capture.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { createHash } from "node:crypto";
 
 /** Build the system prompt for the Skill Proposer agent. */
 function buildProposerPrompt(
@@ -229,6 +230,36 @@ function buildTrainingSummary(traces: ReturnType<typeof Array.prototype.filter>[
     );
   }
   return lines.join("\n");
+}
+
+/** sha256 of every skills/*.md file's content, keyed by filename. */
+export async function snapshotSkills(skillsDir: string): Promise<Record<string, string>> {
+  const snapshot: Record<string, string> = {};
+  let files: string[];
+  try {
+    files = await fs.readdir(skillsDir);
+  } catch {
+    return snapshot;
+  }
+  for (const file of files) {
+    if (!file.endsWith(".md")) continue;
+    const content = await fs.readFile(path.join(skillsDir, file), "utf-8");
+    snapshot[file] = createHash("sha256").update(content).digest("hex");
+  }
+  return snapshot;
+}
+
+/**
+ * Which skill files changed (edited or newly created) between two
+ * snapshots — how `wikiskill validate` finds what the Skill Proposer just
+ * touched without the proposer having to report it back separately.
+ */
+export function diffSkillSnapshots(before: Record<string, string>, after: Record<string, string>): string[] {
+  const changed: string[] = [];
+  for (const [file, hash] of Object.entries(after)) {
+    if (before[file] !== hash) changed.push(file.replace(/\.md$/, ""));
+  }
+  return changed;
 }
 
 function slugify(str: string): string {

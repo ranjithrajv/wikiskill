@@ -27,11 +27,23 @@ import {
   wireCodex,
   checkOpenCode,
   detectInstalledHarnesses,
+  snapshotSkills,
+  diffSkillSnapshots,
+  runValidationGate,
+  rollbackSkill,
+  recordOutcome,
+  buildImpactRecord,
+  appendSkillImpact,
   type TraceEntry,
   type Harness,
   type DetectedHarness,
+  type HeadlessRunner,
 } from "../core/index.js";
+import { claudeCodeRunner } from "./claude-code/runner.js";
+import { codexRunner } from "./codex/runner.js";
+import { openCodeRunner } from "./opencode/runner.js";
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { spawn } from "node:child_process";
 import * as readline from "node:readline/promises";
 
@@ -152,6 +164,9 @@ async function cmdEvolvePrompt(args: string[]): Promise<void> {
 
   state.evolving = true;
   state.iteration++;
+  // Snapshot skills/*.md content now, before the proposer edits it — `validate`
+  // diffs against this to find exactly which file it touched.
+  state.skillSnapshot = await snapshotSkills(skillsDir);
   await writeState(projectDir, state);
 
   console.log(buildEvolutionPrompt(state.iteration, projectDir, sampleSize));
@@ -165,6 +180,107 @@ async function cmdEvolveComplete(args: string[]): Promise<void> {
   await pruneTraces(tracesRoot(projectDir), 3);
 }
 
+const VALIDATE_RUNNERS: Record<Harness, HeadlessRunner> = {
+  "claude-code": claudeCodeRunner,
+  codex: codexRunner,
+  opencode: openCodeRunner,
+};
+
+/**
+ * The real held-out gate: measures whatever skill(s) changed since the last
+ * `evolve-prompt` against `.wikiskill/bench/`, accepts only if the pass rate
+ * beats the stored best, rolls back otherwise, records the outcome, and
+ * closes out the iteration. No self-reported scoring.
+ */
+async function cmdValidate(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const harnessArg = flag(args, "harness", "claude-code");
+  const harness = (OPEN_ALIASES[harnessArg] ?? harnessArg) as Harness;
+  const timeoutMs = Number(flag(args, "timeout-ms", "120000"));
+  const limitFlag = flag(args, "bench-limit", "");
+  const limit = limitFlag ? Number(limitFlag) : undefined;
+
+  const runner = VALIDATE_RUNNERS[harness];
+  if (!runner) {
+    console.error(`[wikiskill] Unknown --harness "${harnessArg}". Expected: claude-code, codex, opencode.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const skillsDir = skillsRoot(projectDir);
+  const wikiDir = wikiRoot(projectDir);
+  const state = await readState(projectDir);
+
+  const currentSnapshot = await snapshotSkills(skillsDir);
+  const changedIds = diffSkillSnapshots(state.skillSnapshot, currentSnapshot);
+
+  if (changedIds.length === 0) {
+    console.log("[wikiskill] No skill changes detected since `evolve-prompt` — nothing to validate.");
+    state.evolving = false;
+    await writeState(projectDir, state);
+    await pruneTraces(tracesRoot(projectDir), 3);
+    return;
+  }
+
+  const candidateSkills = await Promise.all(
+    changedIds.map(async (id) => ({
+      id,
+      content: await fs.readFile(path.join(skillsDir, `${id}.md`), "utf-8"),
+    })),
+  );
+
+  let result;
+  try {
+    result = await runValidationGate(projectDir, candidateSkills, runner, state.bestScore, {
+      timeoutMs,
+      limit,
+    });
+  } catch (err) {
+    console.error(`[wikiskill] ${err instanceof Error ? err.message : err}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!result.ranBench) {
+    console.log(
+      "[wikiskill] No bench tasks configured under `.wikiskill/bench/<task-id>/{task.md,verify}` —\n" +
+        "the proposed skill was NOT validated and is left in place unreviewed.\n" +
+        "Add bench tasks to get a real accept/reject gate on the next iteration.",
+    );
+    state.evolving = false;
+    await writeState(projectDir, state);
+    await pruneTraces(tracesRoot(projectDir), 3);
+    return;
+  }
+
+  for (const t of result.taskResults) {
+    console.log(`  ${t.pass ? "✓" : "✗"} ${t.id}`);
+  }
+  console.log(
+    `[wikiskill] R_val=${result.score.toFixed(3)} (${result.passed}/${result.total}) vs R_best=${result.bestScore.toFixed(3)} → ${result.accepted ? "ACCEPTED" : "REJECTED"}`,
+  );
+
+  const targetSkill = changedIds.join(", ");
+  const record = buildImpactRecord(
+    state.iteration,
+    targetSkill,
+    result.score,
+    result.bestScore,
+    result.accepted,
+    `${result.passed}/${result.total} bench tasks passed`,
+  );
+  const nextState = await recordOutcome(state, record);
+  await appendSkillImpact(wikiDir, record);
+
+  if (!result.accepted) {
+    for (const id of changedIds) await rollbackSkill(skillsDir, id);
+  }
+
+  nextState.evolving = false;
+  await writeState(projectDir, nextState);
+  await pruneTraces(tracesRoot(projectDir), 3);
+}
+
 async function cmdReset(args: string[]): Promise<void> {
   const projectDir = flag(args, "project", process.cwd());
   await writeState(projectDir, {
@@ -172,6 +288,7 @@ async function cmdReset(args: string[]): Promise<void> {
     iteration: 0,
     evolving: false,
     impactHistory: [],
+    skillSnapshot: {},
   });
   console.log("✅ WikiSkill state reset. Wiki patterns and raw traces are preserved.");
 }
@@ -317,6 +434,8 @@ async function main(): Promise<void> {
       return cmdEvolvePrompt(rest);
     case "evolve-complete":
       return cmdEvolveComplete(rest);
+    case "validate":
+      return cmdValidate(rest);
     case "reset":
       return cmdReset(rest);
     case "init":
@@ -325,7 +444,8 @@ async function main(): Promise<void> {
       return cmdOpen(rest);
     default:
       console.error(
-        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|evolve-complete|reset|init|open> [--project DIR]\n" +
+        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|validate|evolve-complete|reset|init|open> [--project DIR]\n" +
+          "  wikiskill validate [--harness claude-code|codex|opencode] [--timeout-ms N] [--bench-limit N]\n" +
           "  wikiskill open [claude|codex|opencode] [-- <harness args>]",
       );
       process.exitCode = 1;

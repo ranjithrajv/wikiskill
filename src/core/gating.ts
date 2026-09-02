@@ -16,6 +16,8 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SkillImpactRecord, PluginState } from "./types.js";
+import { listBenchTasks, makeTaskWorkDir, runVerify } from "./bench.js";
+import type { HeadlessRunner } from "./runner.js";
 
 /** Build a validation prompt for the gating mechanism. */
 export function buildValidationPrompt(
@@ -139,7 +141,10 @@ export function buildImpactRecord(
 }
 
 /**
- * Rollback a skill edit by restoring the backup.
+ * Rollback a rejected skill proposal. If the proposal was an edit, restore
+ * the `.bak` the proposer left behind; if it was a brand-new skill (no
+ * backup exists), discard the file entirely. Either way the wiki itself is
+ * never touched — only the skills/ directory.
  */
 export async function rollbackSkill(skillsDir: string, skillId: string): Promise<boolean> {
   const backupFile = path.join(skillsDir, `${skillId}.md.bak`);
@@ -150,6 +155,80 @@ export async function rollbackSkill(skillsDir: string, skillId: string): Promise
     await fs.unlink(backupFile);
     return true;
   } catch {
-    return false;
+    try {
+      await fs.unlink(targetFile);
+      return true;
+    } catch {
+      return false;
+    }
   }
+}
+
+// ─── Real held-out validation ───────────────────────────────────────────────────
+// Replaces self-reported scoring with an actual measurement: run every
+// configured bench task with the candidate skill(s) installed, headlessly,
+// in an isolated work dir, and score by the fraction that pass their own
+// verify script. Gate is exactly the paper's: accept iff R_val > R_best.
+
+export interface TaskResult {
+  id: string;
+  pass: boolean;
+  output: string;
+}
+
+export interface ValidationGateResult {
+  /** false when no bench tasks are configured — nothing was measured or gated. */
+  ranBench: boolean;
+  total: number;
+  passed: number;
+  /** Pass rate over the tasks actually run (R_val). 0 when ranBench is false. */
+  score: number;
+  bestScore: number;
+  accepted: boolean;
+  taskResults: TaskResult[];
+}
+
+export async function runValidationGate(
+  projectDir: string,
+  candidateSkills: Array<{ id: string; content: string }>,
+  runner: HeadlessRunner,
+  bestScore: number,
+  opts: { timeoutMs?: number; limit?: number } = {},
+): Promise<ValidationGateResult> {
+  const allTasks = await listBenchTasks(projectDir);
+  if (allTasks.length === 0) {
+    return { ranBench: false, total: 0, passed: 0, score: 0, bestScore, accepted: false, taskResults: [] };
+  }
+  const tasks = opts.limit ? allTasks.slice(0, opts.limit) : allTasks;
+  const timeoutMs = opts.timeoutMs ?? 120_000;
+
+  const taskResults: TaskResult[] = [];
+  for (const task of tasks) {
+    const workDir = await makeTaskWorkDir(task.id);
+    try {
+      if (task.fixtureDir) {
+        await fs.cp(task.fixtureDir, workDir, { recursive: true });
+      }
+      for (const skill of candidateSkills) {
+        await runner.installSkill(workDir, skill.id, skill.content);
+      }
+      const run = await runner.run(task.prompt, workDir, timeoutMs);
+      const pass = run.ok && (await runVerify(task.verifyPath, workDir, timeoutMs));
+      taskResults.push({ id: task.id, pass, output: run.output });
+    } finally {
+      await fs.rm(workDir, { recursive: true, force: true });
+    }
+  }
+
+  const passed = taskResults.filter((r) => r.pass).length;
+  const score = passed / taskResults.length;
+  return {
+    ranBench: true,
+    total: taskResults.length,
+    passed,
+    score,
+    bestScore,
+    accepted: shouldAccept(score, bestScore),
+    taskResults,
+  };
 }

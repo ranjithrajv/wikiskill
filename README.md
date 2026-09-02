@@ -124,6 +124,50 @@ the harness itself after `--`, e.g. `npx wikiskill open claude -- --resume`.
 
 ---
 
+## Real held-out validation
+
+By default, `/wiki-evolve` runs `npx wikiskill validate` as its gate — this
+is an actual measurement, not the proposing agent grading its own work:
+
+1. It diffs `.wikiskill/skills/` against a snapshot taken right before the
+   Skill Proposer ran, to find exactly which skill file changed.
+2. For every task under `.wikiskill/bench/<task-id>/`, it copies that task's
+   `fixture/` into a fresh temp directory, installs the candidate skill where
+   the harness actually loads project skills from, runs the harness
+   **headlessly** on `task.md`'s prompt, then runs `verify` (exit 0 = pass)
+   against the result.
+3. Accepts only if the pass rate (`R_val`) is strictly greater than the best
+   score seen so far (`R_best`) — otherwise it rolls the skill back
+   automatically (restores the backup for an edit, deletes a new file for a
+   create) — and appends the real outcome to `.wikiskill/wiki/skill-impact.md`.
+
+**A task looks like:**
+
+```
+.wikiskill/bench/handles-missing-file/
+├── task.md      # the prompt to run
+├── fixture/     # optional starting files, copied fresh per run
+└── verify       # executable; exit 0 = pass
+```
+
+**No bench tasks configured?** `validate` says so and leaves the proposed
+skill in place unreviewed — evolution still runs, it just isn't gated until
+you add tasks. This is opt-in on purpose.
+
+**This executes your coding agent autonomously and costs real API usage** —
+once per bench task per iteration, in an isolated temp directory (never your
+real project). Only the **Claude Code** runner is implemented today (`claude
+-p ... --permission-mode acceptEdits`, confirmed against a live
+`.claude/skills/<id>/SKILL.md` install). Codex CLI and OpenCode runners
+throw a clear "not implemented" error rather than silently measuring
+nothing — see `src/adapters/{codex,opencode}/runner.ts`.
+
+```sh
+npx wikiskill validate [--harness claude-code] [--timeout-ms 120000] [--bench-limit N]
+```
+
+---
+
 ## Configuration
 
 | Option          | Type      | Default | Description                                          |
