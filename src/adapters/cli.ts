@@ -23,10 +23,17 @@ import {
   buildEvolutionPrompt,
   buildStatusText,
   runInit,
+  wireClaudeCode,
+  wireCodex,
+  checkOpenCode,
+  detectInstalledHarnesses,
   type TraceEntry,
   type Harness,
+  type DetectedHarness,
 } from "../core/index.js";
 import * as fs from "node:fs/promises";
+import { spawn } from "node:child_process";
+import * as readline from "node:readline/promises";
 
 const DEFAULT_MAX_ITERATIONS = 10;
 const DEFAULT_SAMPLE_SIZE = 20;
@@ -207,6 +214,96 @@ async function cmdInit(args: string[]): Promise<void> {
   if (changes.length === 0) console.log("  (already wired, nothing to do)");
 }
 
+const OPEN_ALIASES: Record<string, Harness> = {
+  opencode: "opencode",
+  claude: "claude-code",
+  "claude-code": "claude-code",
+  codex: "codex",
+};
+
+async function pickHarness(candidates: DetectedHarness[]): Promise<DetectedHarness> {
+  console.log("Multiple harnesses found on PATH:");
+  candidates.forEach((c, i) => console.log(`  ${i + 1}. ${c.command}  (${c.path})`));
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(`Open which? [1-${candidates.length}]: `);
+    const idx = Number.parseInt(answer.trim(), 10) - 1;
+    const picked = candidates[idx];
+    if (!picked) throw new Error(`Invalid selection: ${answer}`);
+    return picked;
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Discover installed harness CLIs, pick one (explicit arg, sole match, or an
+ * interactive prompt when several are found), finish wiring this project for
+ * it, then hand off the terminal to it. Everything after `--` is forwarded
+ * to the harness untouched.
+ */
+async function cmdOpen(args: string[]): Promise<void> {
+  const sepIdx = args.indexOf("--");
+  const ownArgs = sepIdx >= 0 ? args.slice(0, sepIdx) : args;
+  const childArgs = sepIdx >= 0 ? args.slice(sepIdx + 1) : [];
+  const projectDir = flag(ownArgs, "project", process.cwd());
+
+  let harnessArg: string | undefined;
+  for (let i = 0; i < ownArgs.length; i++) {
+    if (ownArgs[i] === "--project") {
+      i++;
+      continue;
+    }
+    if (ownArgs[i].startsWith("--")) continue;
+    harnessArg = ownArgs[i];
+    break;
+  }
+
+  const installed = detectInstalledHarnesses();
+  if (installed.length === 0) {
+    console.error(
+      "[wikiskill] No supported harness found on PATH (looked for: claude, codex, opencode).\n" +
+        "Install one, then run `wikiskill open` again.",
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  let target: DetectedHarness;
+  if (harnessArg) {
+    const wanted = OPEN_ALIASES[harnessArg];
+    const match = installed.find((h) => h.harness === wanted || h.command === harnessArg);
+    if (!match) {
+      console.error(
+        `[wikiskill] "${harnessArg}" not found on PATH. Installed: ${installed.map((h) => h.command).join(", ")}`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    target = match;
+  } else if (installed.length === 1) {
+    target = installed[0];
+  } else {
+    target = await pickHarness(installed);
+  }
+
+  const changes =
+    target.harness === "claude-code"
+      ? await wireClaudeCode(projectDir)
+      : target.harness === "codex"
+        ? await wireCodex(projectDir)
+        : await checkOpenCode(projectDir);
+  for (const c of changes) console.log(`[wikiskill] ${c}`);
+
+  console.log(`[wikiskill] opening ${target.command}...`);
+  const child = spawn(target.path, childArgs, { stdio: "inherit", cwd: projectDir });
+  const code = await new Promise<number>((resolve) => {
+    child.on("close", (code) => resolve(code ?? 0));
+    child.on("error", () => resolve(1));
+  });
+  process.exitCode = code;
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   switch (command) {
@@ -224,9 +321,12 @@ async function main(): Promise<void> {
       return cmdReset(rest);
     case "init":
       return cmdInit(rest);
+    case "open":
+      return cmdOpen(rest);
     default:
       console.error(
-        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|evolve-complete|reset|init> [--project DIR]",
+        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|evolve-complete|reset|init|open> [--project DIR]\n" +
+          "  wikiskill open [claude|codex|opencode] [-- <harness args>]",
       );
       process.exitCode = 1;
   }

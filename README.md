@@ -81,6 +81,18 @@ it only fills in what's missing.
 
 Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
 
+### One command to open your agent
+
+```sh
+npx wikiskill open
+```
+
+Detects which of `claude` / `codex` / `opencode` are installed on your
+machine, wires this project for whichever one you pick (or auto-picks it if
+only one is installed), then hands off the terminal to it. Skip the picker
+with `npx wikiskill open claude` (or `codex` / `opencode`); forward flags to
+the harness itself after `--`, e.g. `npx wikiskill open claude -- --resume`.
+
 ---
 
 ## Quickstart
