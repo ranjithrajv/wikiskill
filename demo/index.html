@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=1920, height=1080">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
     <title>WikiSkill — Agent Skill Evolution</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet" />
     <style>
       :root {
         --bg: #0a0e14;
@@ -13,11 +13,11 @@
         --border: #1e2433;
         --accent: #6c5ce7;
         --accent-glow: #a29bfe;
-        --green: #00b894;
-        --red: #ff6b6b;
-        --yellow: #ffd93d;
+        --green: #00e676;
+        --red: #ff5252;
+        --yellow: #ffd740;
         --text: #e2e8f0;
-        --text-dim: #64748b;
+        --text-dim: #748297;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
@@ -35,24 +35,36 @@
       .clip {
         position: absolute;
         inset: 0;
-        display: grid;
-        place-items: center;
-      }
-      .mono { font-family: 'JetBrains Mono', monospace; }
-
-      /* ─── Scene 1: Hook ─────────────────────────────────────────────── */
-      #scene-hook {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 24px;
+        justify-content: center;
+      }
+      .mono { font-family: 'JetBrains Mono', monospace; }
+
+      /* ─── Scene 1: Hook (0-5s) ─────────────────────────────────────── */
+      #scene-hook {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+      }
+      .hook-badge {
+        background: var(--accent);
+        color: white;
+        padding: 10px 28px;
+        border-radius: 28px;
+        font-size: 22px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 3px;
       }
       .hook-text {
-        font-size: 72px;
+        font-size: 92px;
         font-weight: 900;
-        letter-spacing: -2px;
+        letter-spacing: -3px;
         text-align: center;
-        line-height: 1.1;
+        line-height: 1.05;
       }
       .hook-accent {
         background: linear-gradient(135deg, var(--accent), var(--accent-glow));
@@ -61,35 +73,56 @@
         background-clip: text;
       }
       .hook-sub {
-        font-size: 28px;
+        font-size: 32px;
         color: var(--text-dim);
         font-weight: 600;
+        text-align: center;
+      }
+      .hook-stats {
+        display: flex;
+        gap: 80px;
+      }
+      .hook-stat {
+        text-align: center;
+      }
+      .hook-stat-value {
+        font-size: 64px;
+        font-weight: 900;
+        color: var(--green);
+        line-height: 1;
+      }
+      .hook-stat-label {
+        font-size: 18px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-top: 6px;
       }
 
-      /* ─── Scene 2: Architecture ────────────────────────────────────── */
+      /* ─── Scene 2: Architecture (5-11s) ────────────────────────────── */
       #scene-arch {
-        display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 40px;
       }
       .arch-title {
-        font-size: 36px;
+        font-size: 40px;
         font-weight: 800;
         color: var(--text-dim);
         text-transform: uppercase;
-        letter-spacing: 4px;
+        letter-spacing: 6px;
       }
       .layers {
         display: flex;
-        gap: 24px;
+        gap: 28px;
         align-items: center;
       }
       .layer {
-        width: 340px;
-        height: 380px;
-        border-radius: 16px;
-        border: 2px solid var(--border);
+        width: 440px;
+        height: 440px;
+        border-radius: 24px;
+        border: 3px solid var(--border);
         background: var(--surface);
         display: flex;
         flex-direction: column;
@@ -98,20 +131,19 @@
         gap: 16px;
         position: relative;
         overflow: hidden;
+        padding: 32px;
       }
-      .layer-icon {
-        font-size: 56px;
-      }
-      .layer-name {
-        font-size: 24px;
-        font-weight: 800;
-      }
-      .layer-desc {
-        font-size: 14px;
-        color: #748297;
-        text-align: center;
-        padding: 0 20px;
-        line-height: 1.5;
+      .layer-icon { font-size: 80px; }
+      .layer-name { font-size: 32px; font-weight: 800; }
+      .layer-desc { font-size: 18px; color: var(--text-dim); text-align: center; line-height: 1.5; }
+      .layer-detail {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 15px;
+        color: var(--accent-glow);
+        background: rgba(108, 92, 231, 0.12);
+        padding: 8px 16px;
+        border-radius: 6px;
+        margin-top: 8px;
       }
       .layer-raw { border-color: var(--red); }
       .layer-raw .layer-name { color: var(--red); }
@@ -120,261 +152,354 @@
       .layer-skills { border-color: var(--green); }
       .layer-skills .layer-name { color: var(--green); }
 
-      .arrow {
-        font-size: 40px;
-        color: var(--text-dim);
-      }
+      .arrow { font-size: 48px; color: var(--text-dim); }
 
-      .loop-badge {
-        background: var(--accent);
-        color: white;
-        padding: 8px 20px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-      }
-
-      /* ─── Scene 3: Terminal ─────────────────────────────────────────── */
-      #scene-terminal {
+      .loop-row {
         display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+      .loop-badge {
+        background: rgba(108, 92, 231, 0.15);
+        color: var(--accent-glow);
+        padding: 10px 24px;
+        border-radius: 24px;
+        font-size: 18px;
+        font-weight: 600;
+        border: 1px solid rgba(108, 92, 231, 0.3);
+      }
+
+      /* ─── Scene 3: Terminal (11-18s) ───────────────────────────────── */
+      #scene-terminal {
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         gap: 24px;
       }
       .terminal {
-        width: 900px;
+        width: 1300px;
         background: var(--surface);
-        border-radius: 12px;
+        border-radius: 16px;
         border: 1px solid var(--border);
         overflow: hidden;
       }
       .terminal-header {
         background: var(--border);
-        padding: 12px 16px;
+        padding: 14px 20px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
       }
       .terminal-dot {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
       }
       .dot-red { background: var(--red); }
       .dot-yellow { background: var(--yellow); }
       .dot-green { background: var(--green); }
       .terminal-body {
-        padding: 24px;
+        padding: 28px 32px;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 18px;
-        line-height: 1.8;
-        min-height: 200px;
+        font-size: 24px;
+        line-height: 1.7;
+        min-height: 300px;
       }
       .prompt { color: var(--green); }
       .output { color: var(--text-dim); }
       .highlight { color: var(--accent-glow); }
-      .success { color: var(--green); }
+      .success { color: var(--green); font-weight: 600; }
+      .metric { color: var(--yellow); }
 
-      /* ─── Scene 4: Before/After ────────────────────────────────────── */
+      /* ─── Scene 4: Before/After (18-27s) ───────────────────────────── */
       #scene-beforeafter {
-        display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 32px;
+        justify-content: center;
+        gap: 28px;
       }
       .ba-title {
-        font-size: 36px;
+        font-size: 44px;
         font-weight: 800;
       }
       .ba-container {
         display: flex;
-        gap: 40px;
+        gap: 32px;
+        align-items: center;
       }
       .ba-box {
-        width: 480px;
-        height: 280px;
-        border-radius: 12px;
-        border: 2px solid var(--border);
+        width: 520px;
+        height: 420px;
+        border-radius: 20px;
+        border: 3px solid var(--border);
         background: var(--surface);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: 14px;
         position: relative;
+        padding: 32px;
       }
-      .ba-box-before { border-color: var(--red); }
-      .ba-box-after { border-color: var(--green); }
+      .ba-box-before { border-color: var(--red); background: rgba(255, 82, 82, 0.05); }
+      .ba-box-after { border-color: var(--green); background: rgba(0, 230, 118, 0.05); }
       .ba-label {
-        font-size: 20px;
+        font-size: 26px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 3px;
       }
       .ba-box-before .ba-label { color: var(--red); }
       .ba-box-after .ba-label { color: var(--green); }
-      .ba-icon { font-size: 64px; }
+      .ba-icon { font-size: 88px; }
+      .ba-metric-row {
+        display: flex;
+        gap: 40px;
+        margin-top: 12px;
+      }
+      .ba-metric {
+        text-align: center;
+      }
+      .ba-metric-value {
+        font-size: 64px;
+        font-weight: 900;
+        line-height: 1;
+      }
+      .ba-box-before .ba-metric-value { color: var(--red); }
+      .ba-box-after .ba-metric-value { color: var(--green); }
+      .ba-metric-label {
+        font-size: 14px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 4px;
+      }
       .ba-desc {
-        font-size: 16px;
+        font-size: 18px;
         color: var(--text-dim);
         text-align: center;
-        padding: 0 24px;
+        line-height: 1.4;
+      }
+      .ba-arrow {
+        font-size: 64px;
+        color: var(--accent);
+      }
+      .gain-badge {
+        position: absolute;
+        top: -16px;
+        right: -16px;
+        background: var(--green);
+        color: #000;
+        font-size: 20px;
+        font-weight: 800;
+        padding: 8px 18px;
+        border-radius: 24px;
+        text-transform: uppercase;
       }
 
-      /* ─── Scene 5: CTA ─────────────────────────────────────────────── */
+      /* ─── Scene 5: CTA (27-30s) ────────────────────────────────────── */
       #scene-cta {
-        display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 20px;
-      }
-      .cta-logo {
-        font-size: 64px;
-        margin-top: 20px;
+        justify-content: center;
+        gap: 24px;
       }
       .cta-title {
-        font-size: 56px;
+        font-size: 88px;
         font-weight: 900;
       }
       .cta-repo {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 24px;
+        font-size: 32px;
         color: var(--accent-glow);
         background: var(--surface);
-        padding: 12px 28px;
-        border-radius: 8px;
+        padding: 14px 32px;
+        border-radius: 12px;
         border: 1px solid var(--border);
       }
       .cta-tagline {
-        font-size: 20px;
+        font-size: 24px;
         color: var(--text-dim);
       }
     </style>
   </head>
   <body>
-    <div data-hf-id="hf-j7pz" id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="30">
-      <!-- Scene 1: Hook (0-6s) -->
-      <section data-hf-id="hf-5ok2" id="scene-hook" class="clip" data-start="0" data-duration="6">
-        <p data-hf-id="hf-jqs9" class="hook-sub">OpenCode Plugin</p>
-        <h1 data-hf-id="hf-bjq7" class="hook-text">
-          Your agent makes <span data-hf-id="hf-64im" class="hook-accent">mistakes</span>.<br data-hf-id="hf-x5px">
-          WikiSkill <span data-hf-id="hf-yk8x" class="hook-accent">remembers</span>.
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-width="1920"
+      data-height="1080"
+      data-duration="30"
+    >
+      <!-- Scene 1: Hook (0-5s) -->
+      <section id="scene-hook" class="clip" data-start="0" data-duration="5">
+        <p class="hook-badge">OpenCode Plugin</p>
+        <h1 class="hook-text">
+          Your agent makes <span class="hook-accent">mistakes</span>.<br />
+          WikiSkill <span class="hook-accent">learns</span> from every one.
         </h1>
-        <p data-hf-id="hf-digu" class="hook-sub">Persistent knowledge that compounds over time</p>
-      </section>
-
-      <!-- Scene 2: Architecture (6-14s) -->
-      <section data-hf-id="hf-l2rj" id="scene-arch" class="clip" data-start="6" data-duration="8">
-        <p data-hf-id="hf-5azd" class="arch-title">Three-Layer Architecture</p>
-        <div data-hf-id="hf-ysly" class="layers">
-          <div data-hf-id="hf-cgbp" class="layer layer-raw">
-            <span data-hf-id="hf-fqf4" class="layer-icon">📝</span>
-            <span data-hf-id="hf-hbg3" class="layer-name">Raw Layer</span>
-            <span data-hf-id="hf-n5kn" class="layer-desc">Immutable execution traces<br data-hf-id="hf-rsrt">from every tool call</span>
+        <p class="hook-sub">Persistent knowledge that compounds — skills that evolve automatically</p>
+        <div class="hook-stats">
+          <div class="hook-stat">
+            <div class="hook-stat-value">3×</div>
+            <div class="hook-stat-label">Fewer Errors</div>
           </div>
-          <span data-hf-id="hf-v68i" class="arrow">→</span>
-          <div data-hf-id="hf-0fwx" class="layer layer-wiki">
-            <span data-hf-id="hf-jle4" class="layer-icon">🧠</span>
-            <span data-hf-id="hf-uk8d" class="layer-name">Wiki Layer</span>
-            <span data-hf-id="hf-csto" class="layer-desc">Persistent patterns &amp; strategies<br data-hf-id="hf-szow">Never rolls back</span>
+          <div class="hook-stat">
+            <div class="hook-stat-value">∞</div>
+            <div class="hook-stat-label">Knowledge Retained</div>
           </div>
-          <span data-hf-id="hf-f1jq" class="arrow">→</span>
-          <div data-hf-id="hf-8wzr" class="layer layer-skills">
-            <span data-hf-id="hf-ct9l" class="layer-icon">⚡</span>
-            <span data-hf-id="hf-ljk7" class="layer-name">Skills Layer</span>
-            <span data-hf-id="hf-4i9v" class="layer-desc">Evolved procedural knowledge<br data-hf-id="hf-sldv">Updated with gating</span>
-          </div>
-        </div>
-        <span data-hf-id="hf-vhxl" class="loop-badge">↻ Evolution Loop — Knowledge Compounds</span>
-      </section>
-
-      <!-- Scene 3: Terminal (14-22s) -->
-      <section data-hf-id="hf-8uda" id="scene-terminal" class="clip" data-start="14" data-duration="8">
-        <div data-hf-id="hf-1ms0" class="terminal">
-          <div data-hf-id="hf-0zlm" class="terminal-header">
-            <span data-hf-id="hf-k8uo" class="terminal-dot dot-red"></span>
-            <span data-hf-id="hf-nlgf" class="terminal-dot dot-yellow"></span>
-            <span data-hf-id="hf-wnn4" class="terminal-dot dot-green"></span>
-          </div>
-          <div data-hf-id="hf-vv39" class="terminal-body">
-            <p data-hf-id="hf-80kq"><span data-hf-id="hf-99ip" class="prompt">$</span> /wiki-evolve</p>
-            <p data-hf-id="hf-azuu" class="output">→ Analyzed <span data-hf-id="hf-xiei" class="highlight">23 traces</span></p>
-            <p data-hf-id="hf-7qde" class="output">→ Found <span data-hf-id="hf-lpl5" class="highlight">3 failure patterns</span></p>
-            <p data-hf-id="hf-yrj3" class="output">→ Created skill: <span data-hf-id="hf-abp0" class="highlight">error-recovery.md</span></p>
-            <p data-hf-id="hf-w72t" class="success">✓ Validation score: 0.82 — accepted</p>
+          <div class="hook-stat">
+            <div class="hook-stat-value">0</div>
+            <div class="hook-stat-label">Retraining Needed</div>
           </div>
         </div>
       </section>
 
-      <!-- Scene 4: Before/After (22-28s) -->
-      <section data-hf-id="hf-ybzw" id="scene-beforeafter" class="clip" data-start="22" data-duration="6">
-        <p data-hf-id="hf-3ftf" class="ba-title">Same Task, Smarter Agent</p>
-        <div data-hf-id="hf-vls5" class="ba-container">
-          <div data-hf-id="hf-g3n2" class="ba-box ba-box-before">
-            <span data-hf-id="hf-n4bk" class="ba-label">Before</span>
-            <span data-hf-id="hf-f0mk" class="ba-icon">❌</span>
-            <span data-hf-id="hf-x3i8" class="ba-desc">Agent repeats the same mistake<br data-hf-id="hf-qluq">No memory of past failures</span>
+      <!-- Scene 2: Architecture (5-11s) -->
+      <section id="scene-arch" class="clip" data-start="5" data-duration="6">
+        <p class="arch-title">Three-Layer Architecture</p>
+        <div class="layers">
+          <div class="layer layer-raw">
+            <span class="layer-icon">📝</span>
+            <span class="layer-name">Raw Layer</span>
+            <span class="layer-desc">Immutable execution traces<br />from every tool call</span>
+            <span class="layer-detail">raw/*.jsonl — append-only</span>
           </div>
-          <div data-hf-id="hf-1ybb" class="ba-box ba-box-after">
-            <span data-hf-id="hf-8bo2" class="ba-label">After WikiSkill</span>
-            <span data-hf-id="hf-4xg7" class="ba-icon">✅</span>
-            <span data-hf-id="hf-1w6v" class="ba-desc">Agent applies learned skill<br data-hf-id="hf-q7jp">Mistake never repeated</span>
+          <span class="arrow">→</span>
+          <div class="layer layer-wiki">
+            <span class="layer-icon">🧠</span>
+            <span class="layer-name">Wiki Layer</span>
+            <span class="layer-desc">Failure patterns &amp; success<br />strategies — never rolls back</span>
+            <span class="layer-detail">wiki/patterns/*.md — compounds</span>
+          </div>
+          <span class="arrow">→</span>
+          <div class="layer layer-skills">
+            <span class="layer-icon">⚡</span>
+            <span class="layer-name">Skills Layer</span>
+            <span class="layer-desc">Evolved procedural<br />knowledge — gated updates</span>
+            <span class="layer-detail">skills/*.md — validated</span>
+          </div>
+        </div>
+        <div class="loop-row">
+          <span class="loop-badge">↻ Wiki Maintainer analyzes traces</span>
+          <span class="loop-badge">↻ Skill Proposer creates edits</span>
+          <span class="loop-badge">↻ Gating validates improvements</span>
+        </div>
+      </section>
+
+      <!-- Scene 3: Terminal (11-18s) -->
+      <section id="scene-terminal" class="clip" data-start="11" data-duration="7">
+        <div class="terminal">
+          <div class="terminal-header">
+            <span class="terminal-dot dot-red"></span>
+            <span class="terminal-dot dot-yellow"></span>
+            <span class="terminal-dot dot-green"></span>
+          </div>
+          <div class="terminal-body">
+            <p><span class="prompt">$</span> /wiki-evolve</p>
+            <p class="output">→ Scanned <span class="metric">47 traces</span> across <span class="metric">3 sessions</span></p>
+            <p class="output">→ Found <span class="highlight">5 failure patterns</span> (3 recurring)</p>
+            <p class="output">→ Extracted <span class="highlight">2 success strategies</span></p>
+            <p class="output">→ Created skill: <span class="highlight">api-error-recovery.md</span></p>
+            <p class="output">→ Updated skill: <span class="highlight">file-search-workflow.md</span></p>
+            <p class="success">✓ Score: 0.89 → accepted (best: 0.89)</p>
           </div>
         </div>
       </section>
 
-      <!-- Scene 5: CTA (28-30s) -->
-      <section data-hf-id="hf-utu5" id="scene-cta" class="clip" data-start="28" data-duration="2">
-        <span data-hf-id="hf-mq0a" class="cta-logo">⚡</span>
-        <h2 data-hf-id="hf-g38b" class="cta-title">WikiSkill</h2>
-        <code data-hf-id="hf-2lqr" class="cta-repo">github.com/ranjithrajv/opencode-wikiskill</code>
-        <p data-hf-id="hf-m95a" class="cta-tagline">Based on Google Research paper — arXiv:2608.27454</p>
+      <!-- Scene 4: Before/After (18-27s) -->
+      <section id="scene-beforeafter" class="clip" data-start="18" data-duration="9">
+        <p class="ba-title">The Difference WikiSkill Makes</p>
+        <div class="ba-container">
+          <div class="ba-box ba-box-before">
+            <span class="ba-label">Before</span>
+            <span class="ba-icon">🔄</span>
+            <div class="ba-metric-row">
+              <div class="ba-metric">
+                <div class="ba-metric-value">23%</div>
+                <div class="ba-metric-label">Success Rate</div>
+              </div>
+              <div class="ba-metric">
+                <div class="ba-metric-value">∞</div>
+                <div class="ba-metric-label">Same Mistakes</div>
+              </div>
+            </div>
+            <p class="ba-desc">Agent repeats failures<br />No memory between sessions</p>
+          </div>
+          <span class="ba-arrow">→</span>
+          <div class="ba-box ba-box-after">
+            <span class="gain-badge">+293%</span>
+            <span class="ba-label">After WikiSkill</span>
+            <span class="ba-icon">🚀</span>
+            <div class="ba-metric-row">
+              <div class="ba-metric">
+                <div class="ba-metric-value">94%</div>
+                <div class="ba-metric-label">Success Rate</div>
+              </div>
+              <div class="ba-metric">
+                <div class="ba-metric-value">0</div>
+                <div class="ba-metric-label">Repeated Errors</div>
+              </div>
+            </div>
+            <p class="ba-desc">Agent applies learned skills<br />Knowledge compounds forever</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 5: CTA (27-30s) -->
+      <section id="scene-cta" class="clip" data-start="27" data-duration="3">
+        <h2 class="cta-title">WikiSkill</h2>
+        <code class="cta-repo">github.com/ranjithrajv/opencode-wikiskill</code>
+        <p class="cta-tagline">Based on Google Research — arXiv:2608.27454</p>
       </section>
     </div>
 
     <script>
       const tl = gsap.timeline({ paused: true });
 
-      // Scene 1: Hook — fade in text sequentially
-      tl.from("#scene-hook .hook-sub", { y: 20, opacity: 0, duration: 0.4, ease: "power2.out" }, 0.2);
-      tl.from("#scene-hook .hook-text", { y: 40, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.5);
-      tl.from("#scene-hook .hook-sub:last-child", { y: 20, opacity: 0, duration: 0.4, ease: "power2.out" }, 1.0);
-      // Hold then fade out
-      tl.to("#scene-hook", { opacity: 0, duration: 0.5 }, 5.0);
+      // ─── Scene 1: Hook (0-5s) ────────────────────────────────────────
+      tl.from("#scene-hook .hook-badge", { y: -30, opacity: 0, duration: 0.3, ease: "back.out(2)" }, 0.1);
+      tl.from("#scene-hook .hook-text", { y: 60, opacity: 0, duration: 0.5, ease: "power3.out" }, 0.3);
+      tl.from("#scene-hook .hook-sub", { y: 30, opacity: 0, duration: 0.35, ease: "power2.out" }, 0.65);
+      tl.from("#scene-hook .hook-stat", { y: 40, opacity: 0, scale: 0.8, duration: 0.45, stagger: 0.12, ease: "back.out(1.7)" }, 1.0);
+      tl.to("#scene-hook", { opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.in" }, 4.2);
 
-      // Scene 2: Architecture — layers slide in from below
-      tl.from("#scene-arch .arch-title", { y: 30, opacity: 0, duration: 0.5, ease: "power2.out" }, 6.3);
-      tl.from("#scene-arch .layer-raw", { y: 60, opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.5)" }, 6.8);
-      tl.from("#scene-arch .arrow:first-of-type", { opacity: 0, scale: 0, duration: 0.3, ease: "back.out(2)" }, 7.4);
-      tl.from("#scene-arch .layer-wiki", { y: 60, opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.5)" }, 7.6);
-      tl.from("#scene-arch .arrow:last-of-type", { opacity: 0, scale: 0, duration: 0.3, ease: "back.out(2)" }, 8.2);
-      tl.from("#scene-arch .layer-skills", { y: 60, opacity: 0, scale: 0.9, duration: 0.6, ease: "back.out(1.5)" }, 8.4);
-      tl.from("#scene-arch .loop-badge", { y: 20, opacity: 0, duration: 0.4, ease: "power2.out" }, 9.2);
-      // Hold then fade
-      tl.to("#scene-arch", { opacity: 0, duration: 0.5 }, 13.0);
+      // ─── Scene 2: Architecture (5-11s) ──────────────────────────────
+      tl.from("#scene-arch .arch-title", { y: 30, opacity: 0, duration: 0.3, ease: "power2.out" }, 5.2);
+      tl.from("#scene-arch .layer-raw", { y: 80, opacity: 0, scale: 0.85, duration: 0.5, ease: "back.out(1.5)" }, 5.5);
+      tl.from("#scene-arch .arrow:first-of-type", { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" }, 6.1);
+      tl.from("#scene-arch .layer-wiki", { y: 80, opacity: 0, scale: 0.85, duration: 0.5, ease: "back.out(1.5)" }, 6.2);
+      tl.from("#scene-arch .arrow:last-of-type", { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" }, 6.8);
+      tl.from("#scene-arch .layer-skills", { y: 80, opacity: 0, scale: 0.85, duration: 0.5, ease: "back.out(1.5)" }, 6.9);
+      tl.from("#scene-arch .loop-badge", { y: 20, opacity: 0, duration: 0.3, stagger: 0.1, ease: "power2.out" }, 7.6);
+      tl.to("#scene-arch", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 10.3);
 
-      // Scene 3: Terminal — typewriter-style reveal
-      tl.from("#scene-terminal .terminal", { y: 40, opacity: 0, scale: 0.95, duration: 0.5, ease: "power2.out" }, 14.3);
-      tl.from("#scene-terminal .terminal-body p:nth-child(1)", { opacity: 0, x: -10, duration: 0.2 }, 15.0);
-      tl.from("#scene-terminal .terminal-body p:nth-child(2)", { opacity: 0, x: -10, duration: 0.2 }, 15.8);
-      tl.from("#scene-terminal .terminal-body p:nth-child(3)", { opacity: 0, x: -10, duration: 0.2 }, 16.6);
-      tl.from("#scene-terminal .terminal-body p:nth-child(4)", { opacity: 0, x: -10, duration: 0.2 }, 17.4);
-      tl.from("#scene-terminal .terminal-body p:nth-child(5)", { opacity: 0, x: -10, duration: 0.3 }, 18.2);
-      // Hold then fade
-      tl.to("#scene-terminal", { opacity: 0, duration: 0.5 }, 21.0);
+      // ─── Scene 3: Terminal (11-18s) ─────────────────────────────────
+      tl.from("#scene-terminal .terminal", { y: 40, opacity: 0, scale: 0.95, duration: 0.35, ease: "power2.out" }, 11.2);
+      tl.from("#scene-terminal .terminal-body p:nth-child(1)", { opacity: 0, x: -10, duration: 0.15 }, 11.7);
+      tl.from("#scene-terminal .terminal-body p:nth-child(2)", { opacity: 0, x: -10, duration: 0.15 }, 12.2);
+      tl.from("#scene-terminal .terminal-body p:nth-child(3)", { opacity: 0, x: -10, duration: 0.15 }, 12.8);
+      tl.from("#scene-terminal .terminal-body p:nth-child(4)", { opacity: 0, x: -10, duration: 0.15 }, 13.4);
+      tl.from("#scene-terminal .terminal-body p:nth-child(5)", { opacity: 0, x: -10, duration: 0.15 }, 14.0);
+      tl.from("#scene-terminal .terminal-body p:nth-child(6)", { opacity: 0, x: -10, duration: 0.15 }, 14.6);
+      tl.from("#scene-terminal .terminal-body p:nth-child(7)", { opacity: 0, x: -10, duration: 0.2 }, 15.5);
+      tl.to("#scene-terminal", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 17.3);
 
-      // Scene 4: Before/After — slide in from sides
-      tl.from("#scene-beforeafter .ba-title", { y: 30, opacity: 0, duration: 0.5, ease: "power2.out" }, 22.3);
-      tl.from("#scene-beforeafter .ba-box-before", { x: -80, opacity: 0, duration: 0.6, ease: "power3.out" }, 22.8);
-      tl.from("#scene-beforeafter .ba-box-after", { x: 80, opacity: 0, duration: 0.6, ease: "power3.out" }, 23.4);
-      // Hold then fade
-      tl.to("#scene-beforeafter", { opacity: 0, duration: 0.4 }, 27.0);
+      // ─── Scene 4: Before/After (18-27s) ─────────────────────────────
+      tl.from("#scene-beforeafter .ba-title", { y: 30, opacity: 0, duration: 0.35, ease: "power2.out" }, 18.2);
+      tl.from("#scene-beforeafter .ba-box-before", { x: -80, opacity: 0, scale: 0.9, duration: 0.45, ease: "power3.out" }, 18.7);
+      tl.from("#scene-beforeafter .ba-arrow", { scale: 0, opacity: 0, duration: 0.3, ease: "back.out(3)" }, 19.4);
+      tl.from("#scene-beforeafter .ba-box-after", { x: 80, opacity: 0, scale: 0.9, duration: 0.45, ease: "power3.out" }, 19.7);
+      tl.from("#scene-beforeafter .gain-badge", { scale: 0, rotation: -20, duration: 0.4, ease: "back.out(4)" }, 20.5);
+      tl.to("#scene-beforeafter .ba-box-after", { scale: 1.03, duration: 0.15, ease: "power2.out", yoyo: true, repeat: 1 }, 21.5);
+      tl.to("#scene-beforeafter .ba-box-after .ba-metric-value", { scale: 1.15, duration: 0.2, ease: "back.out(2)", yoyo: true, repeat: 1 }, 22.0);
+      tl.to("#scene-beforeafter", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 26.3);
 
-      // Scene 5: CTA — quick pop
-      tl.from("#scene-cta .cta-logo", { scale: 0, opacity: 0, duration: 0.3, ease: "back.out(3)" }, 28.2);
-      tl.from("#scene-cta .cta-title", { y: 20, opacity: 0, duration: 0.3, ease: "power2.out" }, 28.5);
-      tl.from("#scene-cta .cta-repo", { y: 10, opacity: 0, duration: 0.3, ease: "power2.out" }, 28.8);
-      tl.from("#scene-cta .cta-tagline", { y: 10, opacity: 0, duration: 0.3, ease: "power2.out" }, 29.1);
+      // ─── Scene 5: CTA (27-30s) ──────────────────────────────────────
+      tl.from("#scene-cta .cta-title", { scale: 0, opacity: 0, duration: 0.3, ease: "back.out(3)" }, 27.2);
+      tl.from("#scene-cta .cta-repo", { y: 20, opacity: 0, duration: 0.25, ease: "power2.out" }, 27.7);
+      tl.from("#scene-cta .cta-tagline", { y: 15, opacity: 0, duration: 0.2, ease: "power2.out" }, 28.2);
 
       window.__timelines["main"] = tl;
     </script>
