@@ -17,7 +17,7 @@ plugin), **Claude Code** (hooks + slash commands), and **Codex CLI**
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
-![WikiSkill Demo](https://github.com/ranjithrajv/opencode-wikiskill/raw/main/assets/wikiskill-demo.gif)
+![WikiSkill Demo](https://github.com/ranjithrajv/wikiskill/raw/main/assets/wikiskill-demo.gif)
 
 ---
 
@@ -45,7 +45,7 @@ Your coding agent makes mistakes. WikiSkill remembers them — and turns them in
 ## Install
 
 ```sh
-npm install --save-dev opencode-wikiskill
+npm install --save-dev wikiskill
 ```
 
 That's it for Claude Code and Codex CLI — a `postinstall` hook detects
@@ -61,12 +61,12 @@ npx wikiskill init --claude-code   # or --codex, --opencode, --all
 
 OpenCode needs one manual step regardless (`opencode.jsonc` is JSONC —
 comments included — so `init` checks it but won't auto-edit it): add
-`"opencode-wikiskill"` to your plugins array —
+`"wikiskill"` to your plugins array —
 
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": [{ "package": "opencode-wikiskill", "options": { "sampleSize": 20, "maxIterations": 10 } }],
+  "plugins": [{ "package": "wikiskill", "options": { "sampleSize": 20, "maxIterations": 10 } }],
 }
 ```
 
@@ -148,7 +148,7 @@ During normal work, your agent only sees evolved **skills** — not the raw wiki
 Other plugins and clients can interact with WikiSkill:
 
 ```ts
-import { WikiSkill } from "opencode-wikiskill/rpc";
+import { WikiSkill } from "wikiskill/rpc";
 
 const wikiskill = client.rpc(WikiSkill);
 

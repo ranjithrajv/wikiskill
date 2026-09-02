@@ -20,7 +20,7 @@ Three-layer architecture:
 
 The key insight from the paper: even when a skill edit fails, the _lesson_ persists in the wiki. Knowledge compounds.
 
-Repo: https://github.com/ranjithrajv/opencode-wikiskill
+Repo: https://github.com/ranjithrajv/wikiskill
 Paper: https://arxiv.org/abs/2608.27454
 
 Works with any OpenCode project — just add to opencode.jsonc and type /wiki-evolve after a coding session.
@@ -44,7 +44,7 @@ How it works:
 
 The result: your agent gets better at your specific codebase over time, without retraining.
 
-GitHub: https://github.com/ranjithrajv/opencode-wikiskill
+GitHub: https://github.com/ranjithrajv/wikiskill
 Paper: https://arxiv.org/abs/2608.27454
 
 ---
@@ -61,7 +61,7 @@ I turned the @lytang_ Google Research paper into a plugin:
 → Knowledge compounds (wiki never rolls back)
 
 Paper: arxiv.org/abs/2608.27454
-Plugin: github.com/ranjithrajv/opencode-wikiskill
+Plugin: github.com/ranjithrajv/wikiskill
 
 cc: @karpathy (the paper cites his LLM Wiki concept as inspiration)
 
@@ -76,7 +76,7 @@ Hey! I just published an OpenCode plugin implementing the WikiSkill paper (Googl
 The wiki never rolls back — even when a skill edit fails, the lesson persists. Knowledge compounds.
 
 Install: add to opencode.jsonc, then /wiki-evolve after a session.
-Repo: https://github.com/ranjithrajv/opencode-wikiskill
+Repo: https://github.com/ranjithrajv/wikiskill
 Paper: https://arxiv.org/abs/2608.27454
 
 Would love feedback from the community!

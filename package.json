@@ -1,7 +1,7 @@
 {
-  "name": "opencode-wikiskill",
+  "name": "wikiskill",
   "version": "0.1.0",
-  "description": "WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution — OpenCode plugin",
+  "description": "WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution — for OpenCode, Claude Code, and Codex CLI",
   "bin": {
     "wikiskill": "./dist/cli.mjs"
   },

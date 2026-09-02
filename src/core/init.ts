@@ -179,11 +179,11 @@ export async function checkOpenCode(projectDir: string): Promise<string[]> {
     const p = path.join(projectDir, name);
     if (!(await exists(p))) continue;
     const content = await fs.readFile(p, "utf-8");
-    if (content.includes("opencode-wikiskill")) {
-      changes.push(`${p} already references opencode-wikiskill`);
+    if (content.includes("wikiskill")) {
+      changes.push(`${p} already references wikiskill`);
     } else {
       changes.push(
-        `ACTION NEEDED: add "opencode-wikiskill" to the "plugins" array in ${p} (see README § OpenCode)`,
+        `ACTION NEEDED: add "wikiskill" to the "plugins" array in ${p} (see README § OpenCode)`,
       );
     }
   }

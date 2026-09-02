@@ -36,5 +36,5 @@ A 30-second no-narration demo video for the WikiSkill OpenCode plugin GitHub rep
 
 ## Assets
 
-- GitHub repo: https://github.com/ranjithrajv/opencode-wikiskill
+- GitHub repo: https://github.com/ranjithrajv/wikiskill
 - Paper: arXiv:2608.27454

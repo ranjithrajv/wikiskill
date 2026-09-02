@@ -9,7 +9,7 @@ different glue.
 ## Install
 
 ```sh
-npm install --save-dev opencode-wikiskill
+npm install --save-dev wikiskill
 ```
 
 ## Wire it up

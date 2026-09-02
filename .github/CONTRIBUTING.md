@@ -5,8 +5,8 @@ Thanks for your interest! This project implements the [WikiSkill paper](https://
 ## Development Setup
 
 ```sh
-git clone https://github.com/ranjithrajv/opencode-wikiskill.git
-cd opencode-wikiskill
+git clone https://github.com/ranjithrajv/wikiskill.git
+cd wikiskill
 npm install
 ```
 
