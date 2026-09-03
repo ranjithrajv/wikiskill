@@ -22,6 +22,8 @@ export default defineConfig({
     outDir: "dist",
     // Minify for production builds.
     minify: false,
+    // Inline core module into CLI to avoid export renaming in chunks.
+    noExternal: [/\.\/core\//],
   },
 
   // ─── Test (Vitest) ──────────────────────────────────────────────────────────

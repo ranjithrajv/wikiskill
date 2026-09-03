@@ -10,7 +10,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { skillsRoot } from "./paths.js";
 
-export type Harness = "opencode" | "claude-code" | "codex" | "pi" | "hermes";
+export type Harness = "opencode" | "claude-code" | "codex" | "pi" | "hermes" | "deepseek";
 
 async function exists(p: string): Promise<boolean> {
   try {
@@ -38,6 +38,12 @@ export async function detectHarnesses(projectDir: string): Promise<Harness[]> {
     found.push("codex");
   }
   if (await exists(path.join(projectDir, ".pi"))) found.push("pi");
+  if (
+    (await exists(path.join(projectDir, ".deepseek"))) ||
+    (await exists(path.join(projectDir, "DEEPSEEK.md")))
+  ) {
+    found.push("deepseek");
+  }
   if (
     (await exists(path.join(projectDir, "hermes.yaml"))) ||
     (await exists(path.join(projectDir, "hermes.json"))) ||
@@ -383,6 +389,69 @@ export async function wireHermes(projectDir: string): Promise<string[]> {
   return changes;
 }
 
+// ─── DeepSeek ────────────────────────────────────────────────────────────────
+// DeepSeek's harness is file-configured like Codex/Pi: no verified plugin API
+// or hook system, so the adapter is self-instrumented tracing via
+// DEEPSEEK.md instructions + file-based prompts under `.deepseek/prompts/`.
+// Skills are read as plain files from `.wikiskill/skills/` (same as Codex).
+
+const DEEPSEEK_MARKER = "## WikiSkill";
+
+const DEEPSEEK_INSTRUCTIONS = `${DEEPSEEK_MARKER}
+
+This project uses WikiSkill for persistent, evolving skills at \`.wikiskill/\`.
+
+- After any non-trivial tool call (edit, command, search that changes your
+  plan), log it:
+  \`npx wikiskill trace-manual --tool <name> --status completed|error\`
+  (add \`--input '<json>'\` / \`--result '<json>'\` when it's worth capturing).
+- Before starting work, check \`.wikiskill/skills/\` for relevant evolved
+  skills and follow them.
+- Run \`npx wikiskill status\` to see current patterns and evolution state.
+- Run \`npx wikiskill evolve-prompt\` to start a WikiSkill evolution iteration,
+  then execute the printed steps and finish with \`npx wikiskill evolve-complete\`.
+`;
+
+const DEEPSEEK_PROMPTS: Record<string, string> = {
+  "wiki-evolve.md": `Run \`npx wikiskill evolve-prompt\` and follow the printed instructions exactly,
+step by step, using your file tools. When every step is complete, run
+\`npx wikiskill evolve-complete\` to close out the iteration.
+`,
+  "wiki-status.md": `Run \`npx wikiskill status\` and show me the output as-is.
+`,
+  "wiki-reset.md": `Run \`npx wikiskill reset\` and show me the output.
+`,
+};
+
+/** Wire the DeepSeek adapter: DEEPSEEK.md block + file prompts. */
+export async function wireDeepseek(projectDir: string): Promise<string[]> {
+  const changes: string[] = [];
+
+  const instructionsPath = path.join(projectDir, "DEEPSEEK.md");
+  const current = (await exists(instructionsPath))
+    ? await fs.readFile(instructionsPath, "utf-8")
+    : "";
+  if (!current.includes(DEEPSEEK_MARKER)) {
+    const next =
+      current.trim().length > 0
+        ? `${current.trimEnd()}\n\n${DEEPSEEK_INSTRUCTIONS}`
+        : DEEPSEEK_INSTRUCTIONS;
+    await fs.writeFile(instructionsPath, next, "utf-8");
+    changes.push(`appended WikiSkill section to ${instructionsPath}`);
+  }
+
+  const promptsDir = path.join(projectDir, ".deepseek", "prompts");
+  await fs.mkdir(promptsDir, { recursive: true });
+  for (const [name, content] of Object.entries(DEEPSEEK_PROMPTS)) {
+    const dest = path.join(promptsDir, name);
+    if (await exists(dest)) continue;
+    await fs.writeFile(dest, content, "utf-8");
+    changes.push(`added ${dest}`);
+  }
+
+  return changes;
+}
+
 // ─── Orchestration ─────────────────────────────────────────────────────────────
 
 /**
@@ -405,6 +474,7 @@ export async function runInit(
   if (targets.has("opencode")) changes.push(...(await checkOpenCode(projectDir)));
   if (targets.has("pi")) changes.push(...(await wirePi(projectDir, frameworkSkillPath)));
   if (targets.has("hermes")) changes.push(...(await wireHermes(projectDir)));
+  if (targets.has("deepseek")) changes.push(...(await wireDeepseek(projectDir)));
 
   return { harnesses: [...targets], changes };
 }

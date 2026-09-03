@@ -1,0 +1,27 @@
+{
+  "name": "wikiskill-dsh-plugin",
+  "version": "0.1.0",
+  "description": "WikiSkill for DeepSeek Harness (dsh): persistent, evolving skills compiled from agent experience",
+  "keywords": ["dsh-plugin", "deepseek-harness", "agent-skills", "wikiskill"],
+  "license": "CC-BY-4.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["lib/index.js", "lib/types/**/*.d.ts", "cordis.yml"],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^0.1.0",
+    "@deepseek-ai/dsh-tools": "^0.1.0"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^0.1.0",
+    "@deepseek-ai/dsh-tools": "^0.1.0",
+    "typescript": "^5.7.0"
+  }
+}

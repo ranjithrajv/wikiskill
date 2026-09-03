@@ -114,6 +114,8 @@ export interface WikiSkillOptions {
   maxPatterns?: number;
   /** Maximum evolution iterations. */
   maxIterations?: number;
+  /** Max surgical edits per iteration — the textual learning rate Lt. */
+  maxEditsPerIteration?: number;
   /** Whether to enable verbose logging. */
   verbose?: boolean;
 }
@@ -122,5 +124,6 @@ export const DEFAULT_OPTIONS: Required<WikiSkillOptions> = {
   sampleSize: 20,
   maxPatterns: 100,
   maxIterations: 10,
+  maxEditsPerIteration: 4,
   verbose: false,
 };

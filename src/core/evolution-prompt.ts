@@ -15,16 +15,32 @@ export function buildEvolutionPrompt(
   iteration: number,
   projectDir: string,
   sampleSize: number,
+  opts: { deepen?: string; editBudget?: number } = {},
 ): string {
   const raw = tracesRoot(projectDir);
   const wiki = wikiRoot(projectDir);
   const skills = skillsRoot(projectDir);
   const bench = benchRoot(projectDir);
+  const budget = opts.editBudget ?? 4;
+
+  const proposerStep = opts.deepen
+    ? `## Step 2: Skill Proposer — DEEPEN existing skill \`${opts.deepen}\`
+Based on the wiki patterns:
+- Check \`${wiki}/skill-impact.md\` to avoid re-proposing failed edits
+- You MUST edit \`${skills}/${opts.deepen.replace(/\.md$/, "")}.md\` IN PLACE — do not create a new skill file
+- Use surgical edits (change at most 30% of the file, at most ${budget} edits): rewrite only the sections the traces prove are wrong or incomplete, preserve everything else`
+    : `## Step 2: Skill Proposer — Propose Skill Update
+Based on the wiki patterns:
+- Check \`${wiki}/skill-impact.md\` to avoid re-proposing failed edits
+- Propose ONE focused skill improvement (at most ${budget} surgical edits, or one new skill under 120 lines)
+- Create or update a skill file in \`${skills}/\` with frontmatter
+- Each skill should be a SKILL.md-style file with name, description, and workflow steps`;
 
   return `You are running WikiSkill evolution iteration ${iteration}.
 
 Project directory: ${projectDir}
 Sample size for trace analysis: ${sampleSize}
+Edit budget for this iteration: ${budget} surgical edits max (textual learning rate — over-budget proposals are rejected by the gate without bench validation)
 
 Execute these steps IN ORDER:
 
@@ -38,12 +54,13 @@ Read the execution traces in \`${raw}/\` and analyze them:
 - Update \`${wiki}/index.md\` with all current patterns
 - Append a timestamped entry to \`${wiki}/logs.md\`
 
-## Step 2: Skill Proposer — Propose Skill Update
-Based on the wiki patterns:
-- Check \`${wiki}/skill-impact.md\` to avoid re-proposing failed edits
-- Propose ONE focused skill improvement
-- Create or update a skill file in \`${skills}/\` with frontmatter
-- Each skill should be a SKILL.md-style file with name, description, and workflow steps
+Tip: for large trace pools, run \`npx wikiskill analysts\` first — it splits
+traces into parallel error/success analyst batches (fleet mode). Execute the
+printed batch prompts, save each analyst's \`\`\`wikiskill-patch output as a
+file under \`.wikiskill/patches/\`, then run \`npx wikiskill consolidate\` to
+merge them into one update before Step 2.
+
+${proposerStep}
 
 ## Step 3: Validate — do NOT self-score
 Run \`npx wikiskill validate\`. This is a real held-out gate, not a self-report:

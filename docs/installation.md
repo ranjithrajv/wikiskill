@@ -32,13 +32,14 @@ wikiskill --help
 | Codex CLI   | `AGENTS.md` / `.codex/`    | AGENTS.md section + custom prompts         |
 | Pi          | `.pi/`                     | `.pi/wikiskill.md` + skills                |
 | Hermes      | `hermes.yaml` / `.hermes/` | `SOUL.md` section + skills                 |
+| DeepSeek    | `DEEPSEEK.md` / `.deepseek/` | `DEEPSEEK.md` section + custom prompts   |
 
 ## Manual wiring
 
 If auto-detection misses your harness, wire it explicitly:
 
 ```sh
-wikiskill init --opencode      # or --claude-code, --codex, --pi, --hermes, --all
+wikiskill init --opencode      # or --claude-code, --codex, --pi, --hermes, --deepseek, --all
 ```
 
 ## Update

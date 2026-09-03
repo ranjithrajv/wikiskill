@@ -1,0 +1,5 @@
+# Mount wikiskill-dsh-plugin in any dsh profile (web, headless, sdk, acp).
+# Save as <profile>/cordis.patch.yml, or pass with `dsh --patch cordis.yml`.
+- insert:
+    - id: wikiskill
+      name: "wikiskill-dsh-plugin"

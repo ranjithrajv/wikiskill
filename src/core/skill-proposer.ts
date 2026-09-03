@@ -14,6 +14,7 @@
 
 import { wikiRoot, ensureWiki, readSkillImpact } from "./wiki-manager.js";
 import { tracesRoot, readTraces } from "./trace-capture.js";
+import { DEFAULT_TEXTUAL_LR } from "./bounded-update.js";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { createHash } from "node:crypto";
@@ -23,6 +24,7 @@ function buildProposerPrompt(
   wikiIndex: string,
   skillImpact: string,
   currentSkills: string,
+  editBudget = DEFAULT_TEXTUAL_LR.maxEdits,
 ): string {
   return `You are the Skill Proposer for WikiSkill — an autonomous agent that evolves procedural skills using insights from the persistent wiki.
 
@@ -79,7 +81,28 @@ description: <What this skill enables>
 - Skills must be concise but complete.
 - Reference specific wiki patterns that motivated the change.
 - Be specific about failure workarounds, not generic advice.
-- If no meaningful improvement is possible, output: \`wikiskill-proposal: none\``;
+- If no meaningful improvement is possible, output: \`wikiskill-proposal: none\`
+
+## Bounded updates (textual learning rate: max ${editBudget} edits)
+Wholesale rewrites destroy useful rules and invalidate the impact history.
+Prefer SURGICAL edits — when editing an existing skill, emit a
+\`\`\`wikiskill-edits block instead of a full-file replacement:
+
+\`\`\`wikiskill-edits
+op: replace | add | delete
+section: <exact ## heading being changed> (omit for add — appended at end)
+content:
+<new section body>
+---
+op: add
+content:
+## New Section
+<new content>
+\`\`\`
+
+Constraints: at most ${editBudget} edits per proposal; change at most 30% of the
+target file's lines; new skills at most ${DEFAULT_TEXTUAL_LR.maxNewLines} lines.
+Over-budget proposals are rejected by the gate WITHOUT bench validation.`;
 }
 
 /** Build the user prompt with task context. */
@@ -105,11 +128,16 @@ ${trainingSummary || "_No training summary available._"}
 
 /**
  * Build the Skill Proposer task prompts.
+ *
+ * Pass `deepen` (a skill id) to run in deepen-existing-skill mode: the named
+ * skill is loaded as the base skill S0 and the proposer must patch it in
+ * place rather than create a new file — Trace2Skill's skill-deepening mode.
  */
 export async function buildProposerTask(
   projectDir: string,
   iteration: number,
   skillsDir: string,
+  opts: { deepen?: string; editBudget?: number } = {},
 ): Promise<{ prompt: string; systemPrompt: string }> {
   const wikiR = wikiRoot(projectDir);
   await ensureWiki(wikiR);
@@ -144,9 +172,32 @@ export async function buildProposerTask(
   const traces = await readTraces(traceDir, 30);
   const trainingSummary = buildTrainingSummary(traces);
 
+  let taskPrompt = buildProposerTaskPrompt(iteration, trainingSummary);
+
+  // Deepen mode: surface the base skill S0 and constrain to in-place edits.
+  if (opts.deepen) {
+    const baseId = opts.deepen.replace(/\.md$/, "");
+    let baseContent = "";
+    try {
+      baseContent = await fs.readFile(path.join(skillsDir, `${baseId}.md`), "utf-8");
+    } catch {
+      throw new Error(
+        `[wikiskill] Cannot deepen: skill "${baseId}" not found in ${skillsDir}. Create it first or omit --deepen.`,
+      );
+    }
+    taskPrompt += `\n\n### Deepen mode — base skill S0: \`${baseId}\`
+\`\`\`markdown
+${baseContent}
+\`\`\`
+
+You MUST edit S0 in place (action: edit, target: ${baseId}) using surgical
+\`\`\`wikiskill-edits — do NOT create a new skill file. Strengthen what S0
+already covers and fill the gaps the traces expose.`;
+  }
+
   return {
-    systemPrompt: buildProposerPrompt(wikiIndex, skillImpact, currentSkills),
-    prompt: buildProposerTaskPrompt(iteration, trainingSummary),
+    systemPrompt: buildProposerPrompt(wikiIndex, skillImpact, currentSkills, opts.editBudget),
+    prompt: taskPrompt,
   };
 }
 

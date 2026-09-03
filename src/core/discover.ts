@@ -19,6 +19,7 @@ const KNOWN_BINARIES: HarnessBinary[] = [
   { harness: "opencode", command: "opencode" },
   { harness: "pi", command: "pi" },
   { harness: "hermes", command: "hermes" },
+  { harness: "deepseek", command: "deepseek" },
 ];
 
 function findOnPath(command: string): string | null {

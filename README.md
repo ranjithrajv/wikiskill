@@ -102,7 +102,7 @@ already there, so nothing happens on a project with none of these yet — for
 that case, or to force a specific one, run:
 
 ```sh
-npx wikiskill init --claude-code   # or --codex, --opencode, --all
+npx wikiskill init --claude-code   # or --codex, --opencode, --deepseek, --all
 ```
 
 OpenCode needs one manual step regardless (`opencode.jsonc` is JSONC —
@@ -125,9 +125,10 @@ it only fills in what's missing.
 | **Codex CLI**   | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md`                                                     |
 | **Pi**          | `.pi/wikiskill.md` (passed via `--append-system-prompt` by `wikiskill open pi`, not auto-loaded) + syncs skills to `.pi/agent/skills/` (best-effort path)      |
 | **Hermes**      | `SOUL.md` WikiSkill section + `.hermes/skills/wikiskill/*.md`                                                                                                  |
+| **DeepSeek**    | `DEEPSEEK.md` WikiSkill section (self-instrumented tracing) + `.deepseek/prompts/wiki-{evolve,status,reset}.md` + Cordis plugin `dsh-plugin/` (`wiki_status`/`wiki_trace`/`wiki_evolve_prompt` tools, `/wiki-*` commands) |
 | **OpenCode**    | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing                                                                             |
 
-Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md), [`src/adapters/pi/README.md`](./src/adapters/pi/README.md), [`src/adapters/hermes/README.md`](./src/adapters/hermes/README.md).
+Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md), [`src/adapters/pi/README.md`](./src/adapters/pi/README.md), [`src/adapters/hermes/README.md`](./src/adapters/hermes/README.md), [`src/adapters/deepseek/README.md`](./src/adapters/deepseek/README.md).
 
 ### One command to open your agent
 
@@ -212,6 +213,31 @@ nothing — see `src/adapters/{codex,opencode}/runner.ts`.
 
 ```sh
 npx wikiskill validate [--harness claude-code] [--timeout-ms 120000] [--bench-limit N]
+  [--edit-budget 4] [--max-edit-fraction 0.3] [--max-new-lines 120]
+```
+
+**Budget pre-gate.** Before the bench even runs, the **edit-budget gate** (SkillOpt-style
+   textual learning rate) measures the real diff and rejects over-budget
+   proposals immediately (default: max 30% of a file changed, max 120 lines
+   for a new skill, max 4 surgical edits decaying to 2). Wholesale rewrites
+   never consume bench runs.
+
+---
+
+## Bounded updates, analyst fleet, deepen mode
+
+```sh
+# Deepen an existing skill in place instead of creating a new file
+npx wikiskill evolve-prompt --deepen error-recovery
+
+# Override the cosine-decayed edit budget (default: 4 degrading to 2)
+npx wikiskill evolve-prompt --edit-budget 6
+
+# Fleet mode for large trace pools: split into parallel error/success
+# analyst batches, execute the printed prompts, save each analyst's
+# patch output under .wikiskill/patches/, then merge:
+npx wikiskill analysts --batch-size 8 [--deepen error-recovery]
+npx wikiskill consolidate [--patches .wikiskill/patches] [--out update.md]
 ```
 
 ---
