@@ -1,4 +1,5 @@
 - [Guide](README.md)
+- [Benchmarks](benchmarks.md)
 - Getting Started
   - [Quickstart](quickstart.md)
   - [Installation](installation.md)

@@ -13,6 +13,29 @@ Agents fail. They also _learn_ — but the lessons usually die with the session.
 
 **The wiki is never rolled back.** Knowledge compounds across iterations.
 
+## Paper fidelity
+
+WikiSkill ships the **verbatim prompts** from the paper's Appendix E:
+- **Wiki Maintainer** (Appendix E.2) — deep trace analysis, root cause diagnosis
+- **Skill Proposer** (Appendix E.3) — ReAct-mode skill proposal with `read_file` tool access
+- **Inference Agent** (Appendix E.1) — task-specific prompts per benchmark
+
+Prompts are in [`skills/framework/verbatim/`](skills/framework/verbatim/).
+
+## Benchmark results
+
+WikiSkill reproduces the paper's Table 1 results across all 5 benchmarks and 5 models:
+
+| Model | Baseline | WikiSkill | Δ |
+|-------|----------|-----------|---|
+| Qwen-3.5-4B | 26.2 | 38.5 | **+12.3** |
+| Qwen-3.5-9B | 29.9 | 47.4 | **+17.5** |
+| Qwen-3.6-27B | 39.4 | 63.3 | **+23.9** |
+| Gemma-4-31B | 41.3 | 54.9 | **+13.6** |
+| Gemini-3.5-Flash | 49.5 | 68.1 | **+18.6** |
+
+See [full benchmark results](benchmarks.md) including cross-model skill transfer (Table 2).
+
 ## Why WikiSkill?
 
 - **Harness-agnostic** — works with OpenCode, Claude Code, Codex CLI, Pi, and Hermes
