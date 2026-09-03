@@ -1,0 +1,27 @@
+- [Guide](README.md)
+- Getting Started
+  - [Quickstart](quickstart.md)
+  - [Installation](installation.md)
+- Concepts
+  - [Three-Layer Architecture](concepts/architecture.md)
+  - [Evolution Loop](concepts/evolution-loop.md)
+  - [Gating & Rollback](concepts/gating.md)
+- CLI Reference
+  - [init](cli/init.md)
+  - [workspace-init](cli/workspace-init.md)
+  - [evolve](cli/evolve.md)
+  - [status](cli/status.md)
+  - [bench](cli/bench.md)
+  - [compare](cli/compare.md)
+  - [transfer](cli/transfer.md)
+  - [cron](cli/cron.md)
+  - [tap](cli/tap.md)
+  - [open](cli/open.md)
+- Harnesses
+  - [OpenCode](harnesses/opencode.md)
+  - [Claude Code](harnesses/claude-code.md)
+  - [Codex CLI](harnesses/codex.md)
+  - [Pi](harnesses/pi.md)
+  - [Hermes](harnesses/hermes.md)
+- [FAQ](faq.md)
+- [Paper](https://arxiv.org/abs/2608.27454)
