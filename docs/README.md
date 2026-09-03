@@ -37,6 +37,19 @@ WikiSkill reproduces the paper's Table 1 results across all 5 benchmarks and 5 m
 
 See [full benchmark results](benchmarks.md) including cross-model skill transfer (Table 2).
 
+### Modern models (Sep 2026)
+
+We also ran WikiSkill against the latest frontier models:
+
+| Model | Score | Cost/iter | Skills Accepted |
+|-------|-------|-----------|-----------------|
+| DeepSeek V4 Flash 0731 | 0.889 | $0.09 | 1 |
+| LongCat-2.0 | 0.833 | $0.15 | 2 |
+| Muse Spark 1.2 | 0.833 | $0.50 | 2 |
+
+See [Modern Models](modern-models.md) for full iteration-by-iteration breakdown with honest negatives.
+
+
 ## Why WikiSkill?
 
 - **Harness-agnostic** — works with OpenCode, Claude Code, Codex CLI, Pi, and Hermes

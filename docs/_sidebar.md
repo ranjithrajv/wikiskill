@@ -1,5 +1,6 @@
 - [Guide](README.md)
 - [Benchmarks](benchmarks.md)
+- [Modern Models](modern-models.md)
 - [Live Runs](runs.md)
 - Getting Started
   - [Quickstart](quickstart.md)
