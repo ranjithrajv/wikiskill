@@ -14,11 +14,14 @@ Harness-agnostic by design: the evolution engine (`src/core/`) is plain
 filesystem + prompt text with zero framework dependencies. Five adapters
 wire it into the harness's own hook/command mechanism — **OpenCode** (native
 plugin, skills registered via `ctx.skill.transform()`), **Claude Code**
-(hooks + slash commands, skills synced to `.claude/skills/<id>/SKILL.md`),
-**Codex CLI** (AGENTS.md + custom prompts, skills read as plain files —
-Codex has no native skill-loading convention), **Pi** (`.pi/` + skills),
-and **Hermes** (`SOUL.md` + skills). Same `.wikiskill/` storage
-across all five; _loading_ skills is adapter-specific, handled automatically.
+(hooks + slash commands, skills synced to `.claude/skills/<id>/SKILL.md`,
+confirmed against a live install), **Codex CLI** (AGENTS.md + custom
+prompts, skills read as plain files — Codex has no native skill-loading
+convention), **Pi** (skill _format_ confirmed, project-level path and
+instruction delivery best-effort — see [`src/adapters/pi/README.md`](./src/adapters/pi/README.md)),
+and **Hermes** (`SOUL.md` + skills, unverified — no live install to check
+against). Same `.wikiskill/` storage across all five; _loading_ skills is
+adapter-specific and not equally confirmed for each.
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
@@ -82,7 +85,7 @@ it only fills in what's missing.
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Claude Code** | `.claude/settings.json` `PostToolUse` hook (trace capture) + `.claude/commands/wiki-{evolve,status,reset}.md` + syncs skills to `.claude/skills/<id>/SKILL.md` |
 | **Codex CLI**   | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md`                                                     |
-| **Pi**          | `.pi/wikiskill.md` instructions + `.pi/skills/wikiskill/*.md`                                                                                                  |
+| **Pi**          | `.pi/wikiskill.md` (passed via `--append-system-prompt` by `wikiskill open pi`, not auto-loaded) + syncs skills to `.pi/agent/skills/` (best-effort path)      |
 | **Hermes**      | `SOUL.md` WikiSkill section + `.hermes/skills/wikiskill/*.md`                                                                                                  |
 | **OpenCode**    | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing                                                                             |
 

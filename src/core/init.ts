@@ -79,20 +79,21 @@ Run \`npx wikiskill reset\` and show the output to the user.
 };
 
 /**
- * Materialize skills where Claude Code actually loads project skills from
- * (`.claude/skills/<id>/SKILL.md` — confirmed against a live install; a bare
- * top-level `skills/` directory is NOT auto-discovered). Writes only what
- * changed, so this is safe to call on every init/open/validate.
+ * Materialize skills as `<destSkillsDir>/<id>/SKILL.md` — the shape both
+ * Claude Code (`.claude/skills/`, confirmed against a live install) and Pi
+ * (`~/.pi/agent/skills/`, confirmed on disk — project-level path is a
+ * best-effort guess, NOT confirmed) use. Writes only what changed, so it's
+ * safe to call on every init/open/validate.
  */
-export async function syncClaudeCodeSkills(
+async function syncSkillsTo(
+  destSkillsDir: string,
   projectDir: string,
   frameworkSkillPath?: string,
 ): Promise<string[]> {
   const changes: string[] = [];
-  const destDir = path.join(projectDir, ".claude", "skills");
 
   async function syncOne(id: string, content: string): Promise<void> {
-    const dest = path.join(destDir, id, "SKILL.md");
+    const dest = path.join(destSkillsDir, id, "SKILL.md");
     const current = (await exists(dest)) ? await fs.readFile(dest, "utf-8") : null;
     if (current === content) return;
     await fs.mkdir(path.dirname(dest), { recursive: true });
@@ -115,6 +116,14 @@ export async function syncClaudeCodeSkills(
   }
 
   return changes;
+}
+
+/** Sync skills to `.claude/skills/<id>/SKILL.md` — confirmed against a live Claude Code install. */
+export async function syncClaudeCodeSkills(
+  projectDir: string,
+  frameworkSkillPath?: string,
+): Promise<string[]> {
+  return syncSkillsTo(path.join(projectDir, ".claude", "skills"), projectDir, frameworkSkillPath);
 }
 
 /** Wire the Claude Code adapter: merge the PostToolUse hook, add slash commands, sync skills. */
@@ -247,9 +256,18 @@ export async function checkOpenCode(projectDir: string): Promise<string[]> {
 }
 
 // ─── Pi ────────────────────────────────────────────────────────────────────────
-// Pi uses a `.pi/` directory for project config and a skill mechanism.
-// We write a `.pi/wikiskill.md` instructions file that Pi loads as project
-// context, plus install Pi skills at `.pi/skills/wikiskill/`.
+// Checked against a live `pi` install (`pi --help`, `~/.pi/agent/skills/`):
+// - Skill FORMAT is confirmed: `<skills-dir>/<name>/SKILL.md` with frontmatter,
+//   identical shape to Claude Code's. `~/.pi/agent/skills/<name>/SKILL.md`
+//   exists on disk. We mirror that as the project-local path
+//   (`.pi/agent/skills/`) — plausible by analogy, but NOT confirmed; a real
+//   project found on this machine used a different `.pi/<session>/SYSTEM.md`
+//   layout, so project-level auto-discovery is genuinely unverified.
+// - There is no evidence Pi auto-loads any project markdown file the way
+//   AGENTS.md/CLAUDE.md work — `--help` shows only an explicit
+//   `--append-system-prompt <text-or-file>` CLI flag, no directory scan.
+//   So we still write `.pi/wikiskill.md`, but `wikiskill open pi` passes it
+//   via that confirmed flag rather than assuming Pi finds it on its own.
 
 const PI_MARKER = "## WikiSkill";
 
@@ -268,25 +286,21 @@ This project uses WikiSkill for persistent, evolving skills at \`.wikiskill/\`.
   then execute the printed steps and finish with \`npx wikiskill evolve-complete\`.
 `;
 
-const PI_SKILLS: Record<string, string> = {
-  "wiki-evolve.md": `Run \`npx wikiskill evolve-prompt\` and follow the printed instructions exactly,
-step by step, using your file tools. When every step is complete, run
-\`npx wikiskill evolve-complete\` to close out the iteration.
-`,
-  "wiki-status.md": `Run \`npx wikiskill status\` and show me the output as-is.
-`,
-  "wiki-reset.md": `Run \`npx wikiskill reset\` and show me the output.
-`,
-};
+/** Path `wikiskill open pi` passes via `--append-system-prompt`. */
+export function piInstructionsPath(projectDir: string): string {
+  return path.join(projectDir, ".pi", "wikiskill.md");
+}
 
-/** Wire the Pi adapter: write `.pi/wikiskill.md` + install skills. */
-export async function wirePi(projectDir: string): Promise<string[]> {
+/**
+ * Wire the Pi adapter: write `.pi/wikiskill.md` (for `wikiskill open pi` to
+ * pass via `--append-system-prompt`) and sync skills to `.pi/agent/skills/`
+ * (best-effort — see comment above).
+ */
+export async function wirePi(projectDir: string, frameworkSkillPath?: string): Promise<string[]> {
   const changes: string[] = [];
-  const piDir = path.join(projectDir, ".pi");
-  await fs.mkdir(piDir, { recursive: true });
+  const instructionsPath = piInstructionsPath(projectDir);
+  await fs.mkdir(path.dirname(instructionsPath), { recursive: true });
 
-  // Write instructions file
-  const instructionsPath = path.join(piDir, "wikiskill.md");
   const current = (await exists(instructionsPath))
     ? await fs.readFile(instructionsPath, "utf-8")
     : "";
@@ -297,15 +311,13 @@ export async function wirePi(projectDir: string): Promise<string[]> {
     changes.push(`wrote WikiSkill instructions to ${instructionsPath}`);
   }
 
-  // Install skills
-  const skillsDir = path.join(piDir, "skills", "wikiskill");
-  await fs.mkdir(skillsDir, { recursive: true });
-  for (const [name, content] of Object.entries(PI_SKILLS)) {
-    const dest = path.join(skillsDir, name);
-    if (await exists(dest)) continue;
-    await fs.writeFile(dest, content, "utf-8");
-    changes.push(`added ${dest}`);
-  }
+  changes.push(
+    ...(await syncSkillsTo(
+      path.join(projectDir, ".pi", "agent", "skills"),
+      projectDir,
+      frameworkSkillPath,
+    )),
+  );
 
   return changes;
 }
@@ -391,7 +403,7 @@ export async function runInit(
     changes.push(...(await wireClaudeCode(projectDir, frameworkSkillPath)));
   if (targets.has("codex")) changes.push(...(await wireCodex(projectDir)));
   if (targets.has("opencode")) changes.push(...(await checkOpenCode(projectDir)));
-  if (targets.has("pi")) changes.push(...(await wirePi(projectDir)));
+  if (targets.has("pi")) changes.push(...(await wirePi(projectDir, frameworkSkillPath)));
   if (targets.has("hermes")) changes.push(...(await wireHermes(projectDir)));
 
   return { harnesses: [...targets], changes };

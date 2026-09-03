@@ -25,6 +25,7 @@
     "typecheck": "vp check --typecheck",
     "lint": "vp lint",
     "fmt": "vp fmt",
+    "prepare": "vp config --no-agent",
     "prepack": "vp pack",
     "postinstall": "node ./scripts/postinstall.mjs"
   },

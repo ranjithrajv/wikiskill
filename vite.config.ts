@@ -43,4 +43,9 @@ export default defineConfig({
   format: {
     exclude: ["node_modules", "dist"],
   },
+
+  // ─── Staged (pre-commit) ────────────────────────────────────────────────────
+  staged: {
+    "*.{ts,tsx,js,mjs}": "vp check --fix",
+  },
 });

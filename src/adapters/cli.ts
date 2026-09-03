@@ -26,9 +26,10 @@ import {
   wireClaudeCode,
   syncClaudeCodeSkills,
   wireCodex,
-  checkOpenCode,
   wirePi,
   wireHermes,
+  piInstructionsPath,
+  checkOpenCode,
   detectInstalledHarnesses,
   snapshotSkills,
   diffSkillSnapshots,
@@ -37,6 +38,22 @@ import {
   recordOutcome,
   buildImpactRecord,
   appendSkillImpact,
+  Workspace,
+  generateDemoBench,
+  DEMO_BENCH_TASKS,
+  compareResults,
+  formatCompareResult,
+  transferSkills,
+  formatTransferResult,
+  loadCronSchedule,
+  addCronSchedule,
+  removeCronSchedule,
+  toggleCronSchedule,
+  shouldFireNow,
+  formatSchedule,
+  installTapSkill,
+  installAllTapSkills,
+  formatTapSkills,
   type TraceEntry,
   type Harness,
   type DetectedHarness,
@@ -438,17 +455,24 @@ async function cmdOpen(args: string[]): Promise<void> {
     target = await pickHarness(installed);
   }
 
+  const frameworkSkillPath = findFrameworkSkillPath();
   const changes =
     target.harness === "claude-code"
-      ? await wireClaudeCode(projectDir, findFrameworkSkillPath())
+      ? await wireClaudeCode(projectDir, frameworkSkillPath)
       : target.harness === "codex"
         ? await wireCodex(projectDir)
         : target.harness === "pi"
-          ? await wirePi(projectDir)
+          ? await wirePi(projectDir, frameworkSkillPath)
           : target.harness === "hermes"
             ? await wireHermes(projectDir)
             : await checkOpenCode(projectDir);
   for (const c of changes) console.log(`[wikiskill] ${c}`);
+
+  // Pi has no confirmed auto-discovery for a project instructions file —
+  // pass it explicitly via the one CLI flag `pi --help` actually documents.
+  if (target.harness === "pi") {
+    childArgs.push("--append-system-prompt", piInstructionsPath(projectDir));
+  }
 
   console.log(`[wikiskill] opening ${target.command}...`);
   const child = spawn(target.path, childArgs, { stdio: "inherit", cwd: projectDir });
@@ -458,6 +482,272 @@ async function cmdOpen(args: string[]): Promise<void> {
   });
   process.exitCode = code;
 }
+
+// ─── Workspace init (with demo bench) ─────────────────────────────────────────
+
+async function cmdInitWorkspace(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const domain = args.find((a) => !a.startsWith("--")) ?? "demo";
+  const backend = flag(args, "backend", "opencode");
+
+  const workspace = new Workspace(path.join(projectDir, "workspaces", domain), domain);
+  if (workspace.exists()) {
+    console.log(`[wikiskill] Workspace "${domain}" already exists at ${workspace.root}`);
+    return;
+  }
+
+  await workspace.init({ domain, backend });
+  await generateDemoBench(workspace);
+
+  // Copy framework skills
+  const frameworkSrc = findFrameworkSkillPath();
+  if (frameworkSrc) {
+    const files = await fs.readdir(frameworkSrc);
+    for (const file of files) {
+      if (file.endsWith(".md")) {
+        const content = await fs.readFile(path.join(frameworkSrc, file), "utf-8");
+        await fs.writeFile(path.join(workspace.frameworkSkillsDir, file), content, "utf-8");
+      }
+    }
+  }
+
+  console.log(`[wikiskill] Created workspace "${domain}" at ${workspace.root}`);
+  console.log(`  Backend: ${backend}`);
+  console.log(
+    `  Bench: ${DEMO_BENCH_TASKS.length} tasks (${DEMO_BENCH_TASKS.filter((t) => t.split === "train").length} train / ${DEMO_BENCH_TASKS.filter((t) => t.split === "val").length} val)`,
+  );
+  console.log(`\nNext: cd ${workspace.root} && wikiskill evolve --iters 3`);
+}
+
+// ─── Bench management ─────────────────────────────────────────────────────────
+
+async function cmdBench(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const domain = args.find((a) => !a.startsWith("--")) ?? "demo";
+  const workspace = new Workspace(path.join(projectDir, "workspaces", domain), domain);
+
+  if (!workspace.exists()) {
+    console.error(
+      `[wikiskill] Workspace "${domain}" not found. Run "wikiskill init ${domain}" first.`,
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const subcmd = args[0] ?? "list";
+  switch (subcmd) {
+    case "list": {
+      const tasks = await workspace.loadBenchTasks();
+      console.log(`## Bench Tasks (${tasks.length} total)`);
+      console.log(`| ID | Split | Title | Grader |`);
+      console.log(`|----|-------|-------|--------|`);
+      for (const t of tasks) {
+        console.log(`| ${t.id} | ${t.split} | ${t.title} | ${t.grader.type} |`);
+      }
+      break;
+    }
+    case "reset": {
+      await generateDemoBench(workspace);
+      console.log(`[wikiskill] Regenerated demo bench (${DEMO_BENCH_TASKS.length} tasks)`);
+      break;
+    }
+    default:
+      console.error("Usage: wikiskill bench [list|reset]");
+      process.exitCode = 1;
+  }
+}
+
+// ─── Compare ──────────────────────────────────────────────────────────────────
+
+async function cmdCompare(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const domainA = args[0];
+  const domainB = args[1];
+
+  if (!domainA || !domainB) {
+    console.error("Usage: wikiskill compare <workspaceA> <workspaceB>");
+    process.exitCode = 1;
+    return;
+  }
+
+  const wsA = new Workspace(path.join(projectDir, "workspaces", domainA), domainA);
+  const wsB = new Workspace(path.join(projectDir, "workspaces", domainB), domainB);
+
+  // Load results from runs
+  const resultsA = new Map<string, number>();
+  const resultsB = new Map<string, number>();
+
+  // For now, load from bench tasks and check skill-impact.md for scores
+  const tasksA = await wsA.loadBenchTasks();
+  const tasksB = await wsB.loadBenchTasks();
+
+  // Extract scores from state
+  const stateA = await readState(wsA.wikiSkillDir);
+  const stateB = await readState(wsB.wikiSkillDir);
+
+  // Use best scores as proxy for per-task results
+  for (const task of tasksA) {
+    resultsA.set(task.id, stateA.bestScore);
+  }
+  for (const task of tasksB) {
+    resultsB.set(task.id, stateB.bestScore);
+  }
+
+  const result = compareResults(resultsA, resultsB);
+  console.log(formatCompareResult(result));
+}
+
+// ─── Transfer ─────────────────────────────────────────────────────────────────
+
+async function cmdTransfer(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const sourceDomain = args[0];
+  const targetDomain = args[1];
+
+  if (!sourceDomain || !targetDomain) {
+    console.error("Usage: wikiskill transfer <sourceWorkspace> <targetWorkspace>");
+    process.exitCode = 1;
+    return;
+  }
+
+  const source = new Workspace(path.join(projectDir, "workspaces", sourceDomain), sourceDomain);
+  const target = new Workspace(path.join(projectDir, "workspaces", targetDomain), targetDomain);
+
+  if (!source.exists()) {
+    console.error(`[wikiskill] Source workspace "${sourceDomain}" not found.`);
+    process.exitCode = 1;
+    return;
+  }
+  if (!target.exists()) {
+    console.error(`[wikiskill] Target workspace "${targetDomain}" not found.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = await transferSkills(source.activeSkillsDir, target.activeSkillsDir);
+  console.log(formatTransferResult(result));
+}
+
+// ─── Cron ─────────────────────────────────────────────────────────────────────
+
+async function cmdCron(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const subcmd = args[0] ?? "list";
+
+  switch (subcmd) {
+    case "list": {
+      const schedules = await loadCronSchedule(projectDir);
+      if (schedules.length === 0) {
+        console.log("[wikiskill] No cron schedules configured.");
+        console.log('Add one: wikiskill cron add "0 1 * * *" <domain> --iters 3');
+        return;
+      }
+      console.log("## Cron Schedules");
+      schedules.forEach((s, i) => console.log(formatSchedule(s, i)));
+      break;
+    }
+    case "add": {
+      const expression = args[1];
+      const domain = args[2];
+      if (!expression || !domain) {
+        console.error(
+          'Usage: wikiskill cron add "<cron-expression>" <domain> [--iters N] [--model M]',
+        );
+        process.exitCode = 1;
+        return;
+      }
+      const iterations = Number(flag(args, "iters", "3"));
+      const model = flag(args, "model", "");
+      const provider = flag(args, "provider", "");
+
+      const schedules = await addCronSchedule(projectDir, {
+        expression,
+        domain,
+        iterations,
+        model: model || undefined,
+        provider: provider || undefined,
+      });
+      console.log(`[wikiskill] Added cron schedule (${schedules.length} total)`);
+      break;
+    }
+    case "remove": {
+      const idx = Number(args[1]);
+      if (isNaN(idx)) {
+        console.error("Usage: wikiskill cron remove <index>");
+        process.exitCode = 1;
+        return;
+      }
+      await removeCronSchedule(projectDir, idx);
+      console.log(`[wikiskill] Removed schedule [${idx}]`);
+      break;
+    }
+    case "toggle": {
+      const idx = Number(args[1]);
+      if (isNaN(idx)) {
+        console.error("Usage: wikiskill cron toggle <index>");
+        process.exitCode = 1;
+        return;
+      }
+      await toggleCronSchedule(projectDir, idx);
+      console.log(`[wikiskill] Toggled schedule [${idx}]`);
+      break;
+    }
+    case "check": {
+      const schedules = await loadCronSchedule(projectDir);
+      const now = new Date();
+      console.log(`[wikiskill] Checking schedules at ${now.toLocaleString()}`);
+      for (const s of schedules) {
+        if (s.enabled && shouldFireNow(s.expression, s.lastRun)) {
+          console.log(`  🔥 Would fire: ${s.expression} → ${s.domain}`);
+        }
+      }
+      break;
+    }
+    default:
+      console.error("Usage: wikiskill cron [list|add|remove|toggle|check]");
+      process.exitCode = 1;
+  }
+}
+
+// ─── Tap ──────────────────────────────────────────────────────────────────────
+
+async function cmdTap(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const subcmd = args[0] ?? "list";
+
+  switch (subcmd) {
+    case "list":
+      console.log(formatTapSkills());
+      break;
+    case "install": {
+      const skillId = args[1];
+      if (!skillId) {
+        console.error("Usage: wikiskill tap install <skillId> [--overwrite]");
+        process.exitCode = 1;
+        return;
+      }
+      const targetDir = path.join(projectDir, ".wikiskill", "skills", "tap");
+      const overwrite = args.includes("--overwrite");
+      const result = await installTapSkill(skillId, targetDir, overwrite);
+      console.log(`[wikiskill] ${result.message}`);
+      break;
+    }
+    case "install-all": {
+      const targetDir = path.join(projectDir, ".wikiskill", "skills", "tap");
+      const overwrite = args.includes("--overwrite");
+      const result = await installAllTapSkills(targetDir, overwrite);
+      console.log(
+        `[wikiskill] Installed ${result.installed.length} skills, skipped ${result.skipped.length}`,
+      );
+      break;
+    }
+    default:
+      console.error("Usage: wikiskill tap [list|install|install-all]");
+      process.exitCode = 1;
+  }
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
@@ -478,14 +768,45 @@ async function main(): Promise<void> {
       return cmdReset(rest);
     case "init":
       return cmdInit(rest);
+    case "workspace-init":
+      return cmdInitWorkspace(rest);
+    case "bench":
+      return cmdBench(rest);
+    case "compare":
+      return cmdCompare(rest);
+    case "transfer":
+      return cmdTransfer(rest);
+    case "cron":
+      return cmdCron(rest);
+    case "tap":
+      return cmdTap(rest);
     case "open":
       return cmdOpen(rest);
     default:
       console.error(
-        "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|validate|evolve-complete|reset|init|open> [--project DIR]\n" +
-          "  wikiskill validate [--harness claude-code|codex|opencode|pi|hermes] [--timeout-ms N] [--bench-limit N]\n" +
-          "  wikiskill open [claude|codex|opencode|pi|hermes] [-- <harness args>]\n" +
-          "  wikiskill init [--claude-code|--codex|--opencode|--pi|--hermes|--all]",
+        "Usage: wikiskill <command> [options]\n" +
+          "\n" +
+          "Commands:\n" +
+          "  init                  Wire harnesses into this project (auto-detect)\n" +
+          "  workspace-init <domain>  Create isolated workspace with demo bench\n" +
+          "  bench [list|reset]    Manage bench tasks\n" +
+          "  status                Show evolution state\n" +
+          "  evolve-prompt         Print the evolution prompt for this iteration\n" +
+          "  evolve-complete       Close out the current iteration\n" +
+          "  validate              Run the gating validation against bench\n" +
+          "  compare <A> <B>       Paired statistical comparison of two workspaces\n" +
+          "  transfer <src> <dst>  Transfer skills between workspaces\n" +
+          "  cron [list|add|remove|toggle|check]  Schedule evolution runs\n" +
+          "  tap [list|install|install-all]       Install distilled patterns\n" +
+          "  open [harness]        Launch a harness with WikiSkill wired\n" +
+          "  trace / trace-manual  Log an execution trace\n" +
+          "  reset                 Reset evolution state (preserves wiki)\n" +
+          "\n" +
+          "Options:\n" +
+          "  --project DIR         Project directory (default: cwd)\n" +
+          "  --harness <name>      claude-code|codex|opencode|pi|hermes\n" +
+          "  --model <id>          Model to use for evolve\n" +
+          "  --provider <name>     Provider to use for evolve",
       );
       process.exitCode = 1;
   }

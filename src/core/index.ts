@@ -16,3 +16,13 @@ export * from "./gating.js";
 export * from "./skill-proposer.js";
 export * from "./wiki-maintainer.js";
 export * from "./evolution-prompt.js";
+export * from "./workspace.js";
+export * from "./compare.js";
+export * from "./transfer.js";
+export * from "./cron.js";
+export * from "./tap.js";
+
+// Re-export bench types from bench.js (the formal bench infrastructure)
+// and workspace.js (the demo bench) with distinct names
+export type { BenchTask } from "./bench.js";
+export type { DemoBenchTask } from "./workspace.js";
