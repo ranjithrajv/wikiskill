@@ -8,8 +8,9 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { skillsRoot } from "./paths.js";
 
-export type Harness = "opencode" | "claude-code" | "codex";
+export type Harness = "opencode" | "claude-code" | "codex" | "pi" | "hermes";
 
 async function exists(p: string): Promise<boolean> {
   try {
@@ -35,6 +36,14 @@ export async function detectHarnesses(projectDir: string): Promise<Harness[]> {
     (await exists(path.join(projectDir, ".codex")))
   ) {
     found.push("codex");
+  }
+  if (await exists(path.join(projectDir, ".pi"))) found.push("pi");
+  if (
+    (await exists(path.join(projectDir, "hermes.yaml"))) ||
+    (await exists(path.join(projectDir, "hermes.json"))) ||
+    (await exists(path.join(projectDir, ".hermes")))
+  ) {
+    found.push("hermes");
   }
   return found;
 }
@@ -69,8 +78,41 @@ Run \`npx wikiskill reset\` and show the output to the user.
 `,
 };
 
-/** Wire the Claude Code adapter: merge the PostToolUse hook, add slash commands. */
-export async function wireClaudeCode(projectDir: string): Promise<string[]> {
+/**
+ * Materialize skills where Claude Code actually loads project skills from
+ * (`.claude/skills/<id>/SKILL.md` — confirmed against a live install; a bare
+ * top-level `skills/` directory is NOT auto-discovered). Writes only what
+ * changed, so this is safe to call on every init/open/validate.
+ */
+export async function syncClaudeCodeSkills(projectDir: string, frameworkSkillPath?: string): Promise<string[]> {
+  const changes: string[] = [];
+  const destDir = path.join(projectDir, ".claude", "skills");
+
+  async function syncOne(id: string, content: string): Promise<void> {
+    const dest = path.join(destDir, id, "SKILL.md");
+    const current = (await exists(dest)) ? await fs.readFile(dest, "utf-8") : null;
+    if (current === content) return;
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.writeFile(dest, content, "utf-8");
+    changes.push(`synced ${dest}`);
+  }
+
+  if (frameworkSkillPath && (await exists(frameworkSkillPath))) {
+    await syncOne("wikiskill", await fs.readFile(frameworkSkillPath, "utf-8"));
+  }
+
+  const evolvedDir = skillsRoot(projectDir);
+  const evolvedFiles = (await exists(evolvedDir)) ? await fs.readdir(evolvedDir) : [];
+  for (const file of evolvedFiles) {
+    if (!file.endsWith(".md")) continue;
+    await syncOne(file.replace(/\.md$/, ""), await fs.readFile(path.join(evolvedDir, file), "utf-8"));
+  }
+
+  return changes;
+}
+
+/** Wire the Claude Code adapter: merge the PostToolUse hook, add slash commands, sync skills. */
+export async function wireClaudeCode(projectDir: string, frameworkSkillPath?: string): Promise<string[]> {
   const changes: string[] = [];
   const claudeDir = path.join(projectDir, ".claude");
   await fs.mkdir(claudeDir, { recursive: true });
@@ -110,6 +152,8 @@ export async function wireClaudeCode(projectDir: string): Promise<string[]> {
     await fs.writeFile(dest, content, "utf-8");
     changes.push(`added ${dest}`);
   }
+
+  changes.push(...(await syncClaudeCodeSkills(projectDir, frameworkSkillPath)));
 
   return changes;
 }
@@ -190,6 +234,132 @@ export async function checkOpenCode(projectDir: string): Promise<string[]> {
   return changes;
 }
 
+// ─── Pi ────────────────────────────────────────────────────────────────────────
+// Pi uses a `.pi/` directory for project config and a skill mechanism.
+// We write a `.pi/wikiskill.md` instructions file that Pi loads as project
+// context, plus install Pi skills at `.pi/skills/wikiskill/`.
+
+const PI_MARKER = "## WikiSkill";
+
+const PI_INSTRUCTIONS = `${PI_MARKER}
+
+This project uses WikiSkill for persistent, evolving skills at \`.wikiskill/\`.
+
+- After any non-trivial tool call (edit, command, search that changes your
+  plan), log it:
+  \`npx wikiskill trace-manual --tool <name> --status completed|error\`
+  (add \`--input '<json>'\` / \`--result '<json>'\` when it's worth capturing).
+- Before starting work, check \`.wikiskill/skills/\` for relevant evolved
+  skills and follow them.
+- Run \`npx wikiskill status\` to see current patterns and evolution state.
+- Run \`npx wikiskill evolve-prompt\` to start a WikiSkill evolution iteration,
+  then execute the printed steps and finish with \`npx wikiskill evolve-complete\`.
+`;
+
+const PI_SKILLS: Record<string, string> = {
+  "wiki-evolve.md": `Run \`npx wikiskill evolve-prompt\` and follow the printed instructions exactly,
+step by step, using your file tools. When every step is complete, run
+\`npx wikiskill evolve-complete\` to close out the iteration.
+`,
+  "wiki-status.md": `Run \`npx wikiskill status\` and show me the output as-is.
+`,
+  "wiki-reset.md": `Run \`npx wikiskill reset\` and show me the output.
+`,
+};
+
+/** Wire the Pi adapter: write `.pi/wikiskill.md` + install skills. */
+export async function wirePi(projectDir: string): Promise<string[]> {
+  const changes: string[] = [];
+  const piDir = path.join(projectDir, ".pi");
+  await fs.mkdir(piDir, { recursive: true });
+
+  // Write instructions file
+  const instructionsPath = path.join(piDir, "wikiskill.md");
+  const current = (await exists(instructionsPath))
+    ? await fs.readFile(instructionsPath, "utf-8")
+    : "";
+  if (!current.includes(PI_MARKER)) {
+    const next = current.trim().length > 0 ? `${current.trimEnd()}\n\n${PI_INSTRUCTIONS}` : PI_INSTRUCTIONS;
+    await fs.writeFile(instructionsPath, next, "utf-8");
+    changes.push(`wrote WikiSkill instructions to ${instructionsPath}`);
+  }
+
+  // Install skills
+  const skillsDir = path.join(piDir, "skills", "wikiskill");
+  await fs.mkdir(skillsDir, { recursive: true });
+  for (const [name, content] of Object.entries(PI_SKILLS)) {
+    const dest = path.join(skillsDir, name);
+    if (await exists(dest)) continue;
+    await fs.writeFile(dest, content, "utf-8");
+    changes.push(`added ${dest}`);
+  }
+
+  return changes;
+}
+
+// ─── Hermes ───────────────────────────────────────────────────────────────────
+// Hermes uses SOUL.md for personality/instructions and has a built-in skills
+// system. We append a WikiSkill section to SOUL.md and install Hermes skills.
+
+const HERMES_MARKER = "## WikiSkill";
+
+const HERMES_SOUL_BLOCK = `${HERMES_MARKER}
+
+This project uses WikiSkill for persistent, evolving skills at \`.wikiskill/\`.
+
+- After any non-trivial tool call (edit, command, search that changes your
+  plan), log it:
+  \`npx wikiskill trace-manual --tool <name> --status completed|error\`
+  (add \`--input '<json>'\` / \`--result '<json>'\` when it's worth capturing).
+- Before starting work, check \`.wikiskill/skills/\` for relevant evolved
+  skills and follow them.
+- Run \`npx wikiskill status\` to see current patterns and evolution state.
+- Run \`npx wikiskill evolve-prompt\` to start a WikiSkill evolution iteration,
+  then execute the printed steps and finish with \`npx wikiskill evolve-complete\`.
+`;
+
+const HERMES_SKILLS: Record<string, string> = {
+  "wiki-evolve.md": `Run \`npx wikiskill evolve-prompt\` and follow the printed instructions exactly,
+step by step, using your file tools. When every step is complete, run
+\`npx wikiskill evolve-complete\` to close out the iteration.
+`,
+  "wiki-status.md": `Run \`npx wikiskill status\` and show me the output as-is.
+`,
+  "wiki-reset.md": `Run \`npx wikiskill reset\` and show me the output.
+`,
+};
+
+/** Wire the Hermes adapter: append to SOUL.md + install skills. */
+export async function wireHermes(projectDir: string): Promise<string[]> {
+  const changes: string[] = [];
+
+  // Append to SOUL.md (Hermes' personality/instructions file)
+  const soulPath = path.join(projectDir, "SOUL.md");
+  const currentSoul = (await exists(soulPath))
+    ? await fs.readFile(soulPath, "utf-8")
+    : "";
+  if (!currentSoul.includes(HERMES_MARKER)) {
+    const next =
+      currentSoul.trim().length > 0
+        ? `${currentSoul.trimEnd()}\n\n${HERMES_SOUL_BLOCK}`
+        : HERMES_SOUL_BLOCK;
+    await fs.writeFile(soulPath, next, "utf-8");
+    changes.push(`appended WikiSkill section to ${soulPath}`);
+  }
+
+  // Install Hermes skills
+  const skillsDir = path.join(projectDir, ".hermes", "skills", "wikiskill");
+  await fs.mkdir(skillsDir, { recursive: true });
+  for (const [name, content] of Object.entries(HERMES_SKILLS)) {
+    const dest = path.join(skillsDir, name);
+    if (await exists(dest)) continue;
+    await fs.writeFile(dest, content, "utf-8");
+    changes.push(`added ${dest}`);
+  }
+
+  return changes;
+}
+
 // ─── Orchestration ─────────────────────────────────────────────────────────────
 
 /**
@@ -200,14 +370,17 @@ export async function checkOpenCode(projectDir: string): Promise<string[]> {
 export async function runInit(
   projectDir: string,
   force: Harness[] = [],
+  frameworkSkillPath?: string,
 ): Promise<{ harnesses: Harness[]; changes: string[] }> {
   const detected = await detectHarnesses(projectDir);
   const targets = new Set<Harness>([...detected, ...force]);
   const changes: string[] = [];
 
-  if (targets.has("claude-code")) changes.push(...(await wireClaudeCode(projectDir)));
+  if (targets.has("claude-code")) changes.push(...(await wireClaudeCode(projectDir, frameworkSkillPath)));
   if (targets.has("codex")) changes.push(...(await wireCodex(projectDir)));
   if (targets.has("opencode")) changes.push(...(await checkOpenCode(projectDir)));
+  if (targets.has("pi")) changes.push(...(await wirePi(projectDir)));
+  if (targets.has("hermes")) changes.push(...(await wireHermes(projectDir)));
 
   return { harnesses: [...targets], changes };
 }

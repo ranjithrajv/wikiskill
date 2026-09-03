@@ -23,6 +23,8 @@
 
 import { Plugin } from "@opencode-ai/plugin";
 import * as fs from "node:fs/promises";
+import * as fsSync from "node:fs";
+import * as path from "node:path";
 import type { PluginState, WikiSkillOptions } from "../../core/types.js";
 import {
   INITIAL_STATE,
@@ -177,11 +179,40 @@ export default Plugin.define({
       });
     });
 
-    // ─── Register evolved skills dynamically ──────────────────────────────
+    // ─── Register the framework skill + evolved skills ────────────────────
+    // ctx.skill.transform's callback is synchronous (not Promise<void>), so
+    // this reads with the sync fs API rather than fs/promises — that's what
+    // lets a plain `ctx.skill.reload()` re-run this and pick up whatever
+    // changed in skillsDir since the last registration, with no extra
+    // bookkeeping needed here.
     await ctx.skill.transform((draft) => {
-      // We'll populate this with evolved skills
-      // The transform reads from the skillsDir on reload
-      void draft; // transform is empty until skills evolve
+      const frameworkSkillPath = path.join(pluginDir, "skills", "wikiskill", "SKILL.md");
+      try {
+        draft.add({
+          id: "wikiskill",
+          name: "WikiSkill",
+          description: "Persistent knowledge base for agent skill evolution",
+          location: frameworkSkillPath,
+          content: fsSync.readFileSync(frameworkSkillPath, "utf-8"),
+        } as any);
+      } catch {
+        // Package didn't ship skills/wikiskill/SKILL.md at this location — skip, not fatal.
+      }
+
+      try {
+        for (const file of fsSync.readdirSync(skillsDir)) {
+          if (!file.endsWith(".md")) continue;
+          const location = path.join(skillsDir, file);
+          draft.add({
+            id: file.replace(/\.md$/, ""),
+            name: file.replace(/\.md$/, ""),
+            location,
+            content: fsSync.readFileSync(location, "utf-8"),
+          } as any);
+        }
+      } catch {
+        // No evolved skills yet.
+      }
     });
 
     // ─── Event subscription for evolution completion ──────────────────────

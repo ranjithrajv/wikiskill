@@ -25,8 +25,11 @@ npm install --save-dev wikiskill
    `.codex/prompts/`, giving you `/wiki-evolve`, `/wiki-status`, `/wiki-reset`
    in the Codex TUI.
 
-3. **Skill** — the shared `skills/wikiskill/SKILL.md` at the repo root works
-   as-is; Codex CLI loads Skills the same way Claude Code and OpenCode do.
+3. **Skills** — this installed Codex CLI has no verified native skill-loading
+   convention (no `codex skills` command, nothing in `codex --help`), so
+   there's no file to sync. Instead the `AGENTS.md` block already tells the
+   agent to read `.wikiskill/skills/*.md` directly and follow whatever's
+   there — plain file reads, not a "Skill" concept Codex itself understands.
 
 ## What's different from the other adapters
 
@@ -38,5 +41,7 @@ npm install --save-dev wikiskill
 
 Because Codex has no live hook, its Raw layer is lower-fidelity than the
 other two adapters — it only captures what the agent chooses to log. Storage
-layout (`.wikiskill/{raw,wiki,skills}`) is otherwise identical, so wikis and
-evolved skills are portable across all three harnesses.
+layout (`.wikiskill/{raw,wiki,skills}`) is identical across all three, but
+*loading* skills isn't: Claude Code needs them synced to `.claude/skills/`,
+OpenCode registers them via a live plugin API call, and Codex just reads
+`.wikiskill/skills/*.md` as plain files per the AGENTS.md instructions above.

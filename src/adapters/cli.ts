@@ -24,6 +24,7 @@ import {
   buildStatusText,
   runInit,
   wireClaudeCode,
+  syncClaudeCodeSkills,
   wireCodex,
   checkOpenCode,
   detectInstalledHarnesses,
@@ -43,12 +44,30 @@ import { claudeCodeRunner } from "./claude-code/runner.js";
 import { codexRunner } from "./codex/runner.js";
 import { openCodeRunner } from "./opencode/runner.js";
 import * as fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import * as readline from "node:readline/promises";
 
 const DEFAULT_MAX_ITERATIONS = 10;
 const DEFAULT_SAMPLE_SIZE = 20;
+
+/**
+ * The framework meta-skill (skills/wikiskill/SKILL.md) ships at the package
+ * root, sibling to dist/. Walk up from this file's own location to find it —
+ * one level up in the built package (dist/cli.mjs), two in source/test mode
+ * (src/adapters/cli.ts) — rather than hardcoding either depth.
+ */
+function findFrameworkSkillPath(): string | undefined {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 4; i++) {
+    const candidate = path.join(dir, "skills", "wikiskill", "SKILL.md");
+    if (existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return undefined;
+}
 
 function flag(args: string[], name: string, fallback: string): string {
   const i = args.indexOf(`--${name}`);
@@ -180,7 +199,7 @@ async function cmdEvolveComplete(args: string[]): Promise<void> {
   await pruneTraces(tracesRoot(projectDir), 3);
 }
 
-const VALIDATE_RUNNERS: Record<Harness, HeadlessRunner> = {
+const VALIDATE_RUNNERS: Partial<Record<Harness, HeadlessRunner>> = {
   "claude-code": claudeCodeRunner,
   codex: codexRunner,
   opencode: openCodeRunner,
@@ -274,6 +293,9 @@ async function cmdValidate(args: string[]): Promise<void> {
 
   if (!result.accepted) {
     for (const id of changedIds) await rollbackSkill(skillsDir, id);
+  } else if (harness === "claude-code") {
+    // Publish the accepted skill to where Claude Code actually loads it from.
+    await syncClaudeCodeSkills(projectDir, findFrameworkSkillPath());
   }
 
   nextState.evolving = false;
@@ -297,8 +319,10 @@ const FORCE_FLAGS: Record<string, Harness> = {
   "--opencode": "opencode",
   "--claude-code": "claude-code",
   "--codex": "codex",
+  "--pi": "pi",
+  "--hermes": "hermes",
 };
-const ALL_HARNESSES: Harness[] = ["opencode", "claude-code", "codex"];
+const ALL_HARNESSES: Harness[] = ["opencode", "claude-code", "codex", "pi", "hermes"];
 
 /**
  * Wire whichever harnesses are already configured in the project (safe to
@@ -314,7 +338,7 @@ async function cmdInit(args: string[]): Promise<void> {
     ? ALL_HARNESSES
     : args.filter((a): a is keyof typeof FORCE_FLAGS => a in FORCE_FLAGS).map((a) => FORCE_FLAGS[a]);
 
-  const { harnesses, changes } = await runInit(projectDir, force);
+  const { harnesses, changes } = await runInit(projectDir, force, findFrameworkSkillPath());
 
   if (quiet && changes.length === 0) return;
   if (harnesses.length === 0) {
@@ -336,6 +360,8 @@ const OPEN_ALIASES: Record<string, Harness> = {
   claude: "claude-code",
   "claude-code": "claude-code",
   codex: "codex",
+  pi: "pi",
+  hermes: "hermes",
 };
 
 async function pickHarness(candidates: DetectedHarness[]): Promise<DetectedHarness> {
@@ -406,7 +432,7 @@ async function cmdOpen(args: string[]): Promise<void> {
 
   const changes =
     target.harness === "claude-code"
-      ? await wireClaudeCode(projectDir)
+      ? await wireClaudeCode(projectDir, findFrameworkSkillPath())
       : target.harness === "codex"
         ? await wireCodex(projectDir)
         : await checkOpenCode(projectDir);

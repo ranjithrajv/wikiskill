@@ -3,8 +3,9 @@
 Claude Code has no plugin API — only hooks (shell commands) and slash commands
 (markdown prompts). This adapter is a thin CLI (`wikiskill`) that shells the
 harness-agnostic core (`src/core/*`) into those two mechanisms. Same wiki,
-same evolution loop, same `skills/wikiskill/SKILL.md` as the OpenCode plugin —
-different glue.
+same evolution loop as the OpenCode plugin — different glue, and skills get
+synced to Claude Code's own `.claude/skills/` convention rather than shared
+verbatim (see below).
 
 ## Install
 
@@ -31,8 +32,10 @@ npm install --save-dev wikiskill
    `.claude/commands/`. This gives you `/wiki-evolve`, `/wiki-status`,
    `/wiki-reset`, matching the OpenCode plugin's commands.
 
-3. **Skill** — the shared `skills/wikiskill/SKILL.md` at the repo root works
-   as-is; Claude Code loads project skills natively.
+3. **Skills** — Claude Code loads project skills from `.claude/skills/<id>/SKILL.md`,
+   not a bare top-level `skills/` directory. `wikiskill init` / `wikiskill open` /
+   a successful `wikiskill validate` sync the framework skill and every accepted
+   evolved skill there automatically — you don't need to copy anything by hand.
 
 ## What's different from the OpenCode adapter
 

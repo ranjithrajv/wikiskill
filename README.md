@@ -11,9 +11,11 @@
 Harness-agnostic by design: the evolution engine (`src/core/`) is plain
 filesystem + prompt text with zero framework dependencies. Three adapters
 wire it into the harness's own hook/command mechanism — **OpenCode** (native
-plugin), **Claude Code** (hooks + slash commands), and **Codex CLI**
-(AGENTS.md + custom prompts). Same `.wikiskill/` storage, same
-`skills/wikiskill/SKILL.md`, portable across all three.
+plugin, skills registered via `ctx.skill.transform()`), **Claude Code**
+(hooks + slash commands, skills synced to `.claude/skills/<id>/SKILL.md`),
+and **Codex CLI** (AGENTS.md + custom prompts, skills read as plain files —
+Codex has no native skill-loading convention). Same `.wikiskill/` storage
+across all three; *loading* skills is adapter-specific, handled automatically.
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
@@ -75,7 +77,7 @@ it only fills in what's missing.
 
 | Harness | What `init` wires |
 |---|---|
-| **Claude Code** | `.claude/settings.json` `PostToolUse` hook (trace capture) + `.claude/commands/wiki-{evolve,status,reset}.md` |
+| **Claude Code** | `.claude/settings.json` `PostToolUse` hook (trace capture) + `.claude/commands/wiki-{evolve,status,reset}.md` + syncs skills to `.claude/skills/<id>/SKILL.md` |
 | **Codex CLI** | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md` |
 | **OpenCode** | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing |
 
