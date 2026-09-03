@@ -25,6 +25,7 @@ Runs training tasks with the current skill set, producing execution traces. The 
 ## Stage 2: Wiki Maintainer
 
 Analyzes traces and distills patterns:
+
 - Samples up to 8 traces (5 failing + 3 passing, per paper §C)
 - Creates/updates pattern pages in `wiki/patterns/`
 - Updates `wiki/index.md` and `wiki/logs.md`
@@ -32,6 +33,7 @@ Analyzes traces and distills patterns:
 ## Stage 3: Skill Proposer
 
 Reads the wiki and traces, proposes exactly ONE skill change:
+
 - Create a new skill, OR
 - Edit an existing skill
 
@@ -40,6 +42,7 @@ Uses ReAct-style reasoning with `read_file` tool access (paper §3.2.3).
 ## Stage 4: Gating & Rollback
 
 Validates the proposal on held-out tasks:
+
 - `R_val > R_best` → **ACCEPTED** (keep skill, update R_best)
 - `R_val ≤ R_best` → **REJECTED** (rollback skill)
 

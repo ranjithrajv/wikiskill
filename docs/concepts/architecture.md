@@ -30,6 +30,7 @@ WikiSkill organizes the workspace into three distinct layers, mirroring the pape
 ## Raw Layer (`raw/`)
 
 Immutable execution traces from every tool call. Captured automatically:
+
 - OpenCode: via `tool.hook("execute.after")` plugin hook
 - Claude Code: via `PostToolUse` hook → `wikiskill trace`
 - Others: self-instrumented via AGENTS.md instructions
@@ -39,6 +40,7 @@ Each trace records: tool name, input, output, status (completed/error), duration
 ## Wiki Layer (`wiki/`)
 
 Persistent, compounding knowledge maintained by the Wiki Maintainer agent:
+
 - **`patterns/*.md`** — individual pattern pages (failure modes, success strategies)
 - **`index.md`** — auto-rebuilt catalog of all patterns
 - **`logs.md`** — chronological evolution log
@@ -49,10 +51,11 @@ The wiki is **never rolled back** — even when a skill edit is rejected, the kn
 ## Skills Layer (`skills/`)
 
 Evolved procedural instructions that the agent actually follows:
+
 - **`active/`** — the current skill set (what the agent sees)
 - **`framework/`** — maintainer + proposer prompt templates
 
-Skills are the *distilled output* of the wiki — concise, actionable, validated.
+Skills are the _distilled output_ of the wiki — concise, actionable, validated.
 
 ## Why three layers?
 

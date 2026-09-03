@@ -60,6 +60,13 @@ import {
   installTapSkill,
   installAllTapSkills,
   formatTapSkills,
+  initRunLog,
+  loadRunLog,
+  saveRunLog,
+  logIteration,
+  logNegative,
+  listRunLogs,
+  formatRunLogMarkdown,
   type TraceEntry,
   type Harness,
   type DetectedHarness,
@@ -992,6 +999,88 @@ async function cmdTap(args: string[]): Promise<void> {
   }
 }
 
+// ─── Runs ─────────────────────────────────────────────────────────────────────
+
+async function cmdRuns(args: string[]): Promise<void> {
+  const projectDir = flag(args, "project", process.cwd());
+  const subcmd = args[0] ?? "list";
+
+  switch (subcmd) {
+    case "list": {
+      const runs = await listRunLogs(projectDir);
+      if (runs.length === 0) {
+        console.log("[wikiskill] No run logs found. Run `wikiskill evolve` to create one.");
+        return;
+      }
+      console.log("## Run Logs");
+      console.log("");
+      console.log("| ID | Date | Backend | Model | Iters | Accepted | Rejected | R_best |");
+      console.log("|----|------|---------|-------|-------|----------|----------|--------|");
+      for (const run of runs) {
+        console.log(
+          `| ${run.id} | ${run.date} | ${run.backend} | ${run.model} | ${run.summary.totalIterations} | ${run.summary.skillsAccepted} | ${run.summary.skillsRejected} | ${run.summary.finalRBest.toFixed(3)} |`,
+        );
+      }
+      break;
+    }
+    case "export": {
+      const runId = args[1];
+      const runs = await listRunLogs(projectDir);
+      const run = runId ? runs.find((r) => r.id === runId) : runs[0];
+
+      if (!run) {
+        console.error(
+          `[wikiskill] Run not found. Use "wikiskill runs list" to see available runs.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      const md = formatRunLogMarkdown(run);
+      console.log(md);
+      break;
+    }
+    case "show": {
+      const runId = args[1];
+      const runs = await listRunLogs(projectDir);
+      const run = runId ? runs.find((r) => r.id === runId) : runs[0];
+
+      if (!run) {
+        console.error(
+          `[wikiskill] Run not found. Use "wikiskill runs list" to see available runs.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(`## Run: ${run.id}`);
+      console.log("");
+      console.log(`- Date: ${run.date}`);
+      console.log(`- Model: ${run.model}`);
+      console.log(`- Backend: ${run.backend}`);
+      console.log(`- Iterations: ${run.summary.totalIterations}`);
+      console.log(`- Skills accepted: ${run.summary.skillsAccepted}`);
+      console.log(`- Skills rejected: ${run.summary.skillsRejected}`);
+      console.log(`- Final R_best: ${run.summary.finalRBest.toFixed(3)}`);
+      console.log(`- Active skills: ${run.summary.activeSkills.join(", ") || "none"}`);
+      console.log(`- Wiki patterns: ${run.summary.wikiPatterns}`);
+      console.log(`- Cost: $${run.cost.estimatedUsd.toFixed(2)}`);
+
+      if (run.honestNegatives.length > 0) {
+        console.log("");
+        console.log("### Honest negatives");
+        for (const neg of run.honestNegatives) {
+          console.log(`- ${neg}`);
+        }
+      }
+      break;
+    }
+    default:
+      console.error("Usage: wikiskill runs [list|show|export]");
+      process.exitCode = 1;
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
@@ -1027,6 +1116,8 @@ async function main(): Promise<void> {
       return cmdCron(rest);
     case "tap":
       return cmdTap(rest);
+    case "runs":
+      return cmdRuns(rest);
     case "open":
       return cmdOpen(rest);
     default:

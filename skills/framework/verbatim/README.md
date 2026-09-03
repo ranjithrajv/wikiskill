@@ -9,22 +9,22 @@ Authors: Liyan Tang, Cyrus Rashtchian, Chun-Sung Ferng, Andrew Tomkins, Da-Cheng
 
 ## Files
 
-| File | Paper Appendix | Purpose |
-|------|---------------|---------|
-| `maintainer.md` | E.2 | Wiki Maintainer agent system prompt |
-| `proposer.md` | E.3 | Skill Proposer agent system prompt (ReAct mode) |
-| `inference-livemath.md` | E.1 | Inference Agent for LiveMathematicianBench |
-| `inference-sealqa.md` | E.1 | Inference Agent for SealQA |
-| `inference-spreadsheet.md` | E.1 | Inference Agent for SpreadsheetBench |
-| `inference-officeqa.md` | E.1 | Inference Agent for OfficeQA |
-| `inference-alfworld.md` | E.1 | Inference Agent for ALFWorld |
+| File                       | Paper Appendix | Purpose                                         |
+| -------------------------- | -------------- | ----------------------------------------------- |
+| `maintainer.md`            | E.2            | Wiki Maintainer agent system prompt             |
+| `proposer.md`              | E.3            | Skill Proposer agent system prompt (ReAct mode) |
+| `inference-livemath.md`    | E.1            | Inference Agent for LiveMathematicianBench      |
+| `inference-sealqa.md`      | E.1            | Inference Agent for SealQA                      |
+| `inference-spreadsheet.md` | E.1            | Inference Agent for SpreadsheetBench            |
+| `inference-officeqa.md`    | E.1            | Inference Agent for OfficeQA                    |
+| `inference-alfworld.md`    | E.1            | Inference Agent for ALFWorld                    |
 
 ## Usage
 
 These prompts are loaded by the evolution engine:
 
 ```typescript
-import { maintainerPrompt, proposerPrompt } from './prompts/verbatim';
+import { maintainerPrompt, proposerPrompt } from "./prompts/verbatim";
 
 // Used by WikiMaintainer agent
 const maintainerSystemPrompt = maintainerPrompt;

@@ -43,12 +43,15 @@ Below are sampled execution traces from the latest iteration. Some are successes
 Category: <failure|success|strategy>
 
 ## Description
+
 <What this pattern describes>
 
 ## Actionable
+
 <What an agent should do (or avoid) based on this pattern>
 
 ## Evidence
+
 - <Trace or observation that supports this pattern>
 ```
 
@@ -66,6 +69,7 @@ Category: <failure|success|strategy>
 The index.md entries are the MOST IMPORTANT part of the wiki because they determine whether inference agents will read the full pattern pages.
 
 Each index entry MUST follow this format:
+
 - `pattern-name: PROBLEM + ROOT CAUSE + FIX in one or two sentences.`
 
 The description must be specific enough that an agent can judge relevance without reading the full page. Include the problem, root cause, AND solution.

@@ -25,13 +25,13 @@ wikiskill --help
 
 ## Supported harnesses
 
-| Harness | Detects | Wire |
-|---------|---------|------|
-| OpenCode | `opencode.jsonc` | Plugin API (hooks, commands, skills) |
-| Claude Code | `.claude/` | PostToolUse hook + slash commands + skills |
-| Codex CLI | `AGENTS.md` / `.codex/` | AGENTS.md section + custom prompts |
-| Pi | `.pi/` | `.pi/wikiskill.md` + skills |
-| Hermes | `hermes.yaml` / `.hermes/` | `SOUL.md` section + skills |
+| Harness     | Detects                    | Wire                                       |
+| ----------- | -------------------------- | ------------------------------------------ |
+| OpenCode    | `opencode.jsonc`           | Plugin API (hooks, commands, skills)       |
+| Claude Code | `.claude/`                 | PostToolUse hook + slash commands + skills |
+| Codex CLI   | `AGENTS.md` / `.codex/`    | AGENTS.md section + custom prompts         |
+| Pi          | `.pi/`                     | `.pi/wikiskill.md` + skills                |
+| Hermes      | `hermes.yaml` / `.hermes/` | `SOUL.md` section + skills                 |
 
 ## Manual wiring
 

@@ -21,6 +21,7 @@ export * from "./compare.js";
 export * from "./transfer.js";
 export * from "./cron.js";
 export * from "./tap.js";
+export * from "./run-log.js";
 
 // Re-export bench types from bench.js (the formal bench infrastructure)
 // and workspace.js (the demo bench) with distinct names

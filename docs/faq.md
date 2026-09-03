@@ -27,20 +27,22 @@ The gating mechanism catches this. If a skill hurts validation performance, it's
 ## Can I add my own tasks?
 
 Yes. Tasks are plain JSON:
+
 ```json
 {
   "id": "my-task",
   "split": "train",
   "title": "My custom task",
   "prompt": "...",
-  "sandbox": {"input.txt": "..."},
-  "grader": {"type": "exact", "file": "output.txt", "expected": "..."}
+  "sandbox": { "input.txt": "..." },
+  "grader": { "type": "exact", "file": "output.txt", "expected": "..." }
 }
 ```
 
 ## What's the difference from ashutoshsinghpr7/wikiskill?
 
 Both implement the same paper. Differences:
+
 - **WikiSkill (this repo)**: TypeScript/npm, 5 harnesses, auto-wiring, `open` command, demo video
 - **ashutoshsinghpr7**: Python/PyPI, 4 harnesses (Hermes-focused), verbatim Appendix E prompts, documented live runs, docs site
 

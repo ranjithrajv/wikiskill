@@ -69,11 +69,13 @@ description: <What this skill enables>
 ---
 
 ## Workflow
+
 1. <Step-by-step procedure>
 2. <Each step should be concrete and actionable>
 3. <Reference wiki patterns that motivated this skill>
 
 ## Key Patterns
+
 - <Which wiki patterns this skill addresses>
 ```
 

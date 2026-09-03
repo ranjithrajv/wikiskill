@@ -141,9 +141,6 @@ export function formatResultsTable(results: BenchmarkResult[]): string {
 
   for (const [model, modelResults] of byModel) {
     for (const r of modelResults) {
-      const avg = calcAverage({
-        LiveMath: r.score, // Simplified — would aggregate per-benchmark
-      });
       lines.push(`| ${model} | ${r.method} | ${r.score.toFixed(1)} | | | | |`);
     }
   }
