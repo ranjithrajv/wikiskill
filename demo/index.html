@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=1920, height=1080" />
     <title>WikiSkill — Agent Skill Evolution</title>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800;900&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
         --bg: #0a0e14;
@@ -19,7 +22,11 @@
         --text: #e2e8f0;
         --text-dim: #748297;
       }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
       body {
         background: var(--bg);
         color: var(--text);
@@ -40,7 +47,9 @@
         align-items: center;
         justify-content: center;
       }
-      .mono { font-family: 'JetBrains Mono', monospace; }
+      .mono {
+        font-family: "JetBrains Mono", monospace;
+      }
 
       /* ─── Scene 1: Hook (0-5s) ─────────────────────────────────────── */
       #scene-hook {
@@ -61,10 +70,26 @@
         border: 1px solid var(--border);
         background: var(--surface);
       }
-      .hook-badge.oc { border-color: #1a8ff0; color: #1a8ff0; }
-      .hook-badge.cc { border-color: #d97706; color: #d97706; }
-      .hook-badge.cx { border-color: #6b7280; color: #9ca3af; }
-      .hook-badge.hl { border-color: var(--accent); color: var(--accent-glow); background: rgba(108, 92, 231, 0.08); }
+      .hook-badge.oc {
+        border-color: #1a8ff0;
+        color: #1a8ff0;
+      }
+      .hook-badge.cc {
+        border-color: #d97706;
+        color: #d97706;
+      }
+      .hook-badge.cx {
+        border-color: #6b7280;
+        color: #9ca3af;
+      }
+      .hook-badge.pi {
+        border-color: #10b981;
+        color: #10b981;
+      }
+      .hook-badge.hx {
+        border-color: #f59e0b;
+        color: #f59e0b;
+      }
 
       .hook-text {
         font-size: 82px;
@@ -92,7 +117,7 @@
         margin-top: 8px;
       }
       .hook-install-code {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 22px;
         background: var(--surface);
         padding: 10px 20px;
@@ -136,11 +161,21 @@
         overflow: hidden;
         padding: 28px;
       }
-      .layer-icon { font-size: 72px; }
-      .layer-name { font-size: 28px; font-weight: 800; }
-      .layer-desc { font-size: 16px; color: var(--text-dim); text-align: center; line-height: 1.5; }
+      .layer-icon {
+        font-size: 72px;
+      }
+      .layer-name {
+        font-size: 28px;
+        font-weight: 800;
+      }
+      .layer-desc {
+        font-size: 16px;
+        color: var(--text-dim);
+        text-align: center;
+        line-height: 1.5;
+      }
       .layer-detail {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 13px;
         color: var(--accent-glow);
         background: rgba(108, 92, 231, 0.12);
@@ -148,14 +183,29 @@
         border-radius: 6px;
         margin-top: 6px;
       }
-      .layer-raw { border-color: var(--red); }
-      .layer-raw .layer-name { color: var(--red); }
-      .layer-wiki { border-color: var(--yellow); }
-      .layer-wiki .layer-name { color: var(--yellow); }
-      .layer-skills { border-color: var(--green); }
-      .layer-skills .layer-name { color: var(--green); }
+      .layer-raw {
+        border-color: var(--red);
+      }
+      .layer-raw .layer-name {
+        color: var(--red);
+      }
+      .layer-wiki {
+        border-color: var(--yellow);
+      }
+      .layer-wiki .layer-name {
+        color: var(--yellow);
+      }
+      .layer-skills {
+        border-color: var(--green);
+      }
+      .layer-skills .layer-name {
+        color: var(--green);
+      }
 
-      .arrow { font-size: 44px; color: var(--text-dim); }
+      .arrow {
+        font-size: 44px;
+        color: var(--text-dim);
+      }
 
       .loop-row {
         display: flex;
@@ -198,21 +248,38 @@
         height: 12px;
         border-radius: 50%;
       }
-      .dot-red { background: var(--red); }
-      .dot-yellow { background: var(--yellow); }
-      .dot-green { background: var(--green); }
+      .dot-red {
+        background: var(--red);
+      }
+      .dot-yellow {
+        background: var(--yellow);
+      }
+      .dot-green {
+        background: var(--green);
+      }
       .terminal-body {
         padding: 24px 28px;
-        font-family: 'JetBrains Mono', monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 22px;
         line-height: 1.7;
         min-height: 280px;
       }
-      .prompt { color: var(--green); }
-      .output { color: var(--text-dim); }
-      .highlight { color: var(--accent-glow); }
-      .success { color: var(--green); font-weight: 600; }
-      .metric { color: var(--yellow); }
+      .prompt {
+        color: var(--green);
+      }
+      .output {
+        color: var(--text-dim);
+      }
+      .highlight {
+        color: var(--accent-glow);
+      }
+      .success {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .metric {
+        color: var(--yellow);
+      }
 
       /* ─── Scene 4: Before/After (18-27s) ───────────────────────────── */
       #scene-beforeafter {
@@ -244,17 +311,29 @@
         position: relative;
         padding: 28px;
       }
-      .ba-box-before { border-color: var(--red); background: rgba(255, 82, 82, 0.05); }
-      .ba-box-after { border-color: var(--green); background: rgba(0, 230, 118, 0.05); }
+      .ba-box-before {
+        border-color: var(--red);
+        background: rgba(255, 82, 82, 0.05);
+      }
+      .ba-box-after {
+        border-color: var(--green);
+        background: rgba(0, 230, 118, 0.05);
+      }
       .ba-label {
         font-size: 24px;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 3px;
       }
-      .ba-box-before .ba-label { color: var(--red); }
-      .ba-box-after .ba-label { color: var(--green); }
-      .ba-icon { font-size: 80px; }
+      .ba-box-before .ba-label {
+        color: var(--red);
+      }
+      .ba-box-after .ba-label {
+        color: var(--green);
+      }
+      .ba-icon {
+        font-size: 80px;
+      }
       .ba-metric-row {
         display: flex;
         gap: 36px;
@@ -268,8 +347,12 @@
         font-weight: 900;
         line-height: 1;
       }
-      .ba-box-before .ba-metric-value { color: var(--red); }
-      .ba-box-after .ba-metric-value { color: var(--green); }
+      .ba-box-before .ba-metric-value {
+        color: var(--red);
+      }
+      .ba-box-after .ba-metric-value {
+        color: var(--green);
+      }
       .ba-metric-label {
         font-size: 13px;
         color: var(--text-dim);
@@ -312,7 +395,7 @@
         font-weight: 900;
       }
       .cta-repo {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: "JetBrains Mono", monospace;
         font-size: 28px;
         color: var(--accent-glow);
         background: var(--surface);
@@ -341,13 +424,14 @@
           <span class="hook-badge oc">OpenCode</span>
           <span class="hook-badge cc">Claude Code</span>
           <span class="hook-badge cx">Codex CLI</span>
-          <span class="hook-badge hl">+ more</span>
+          <span class="hook-badge pi">Pi</span>
+          <span class="hook-badge hx">Hermes</span>
         </div>
         <h1 class="hook-text">
           <span class="hook-accent">Harness-agnostic</span>.<br />
           Your agent learns from <span class="hook-accent">every mistake</span>.
         </h1>
-        <p class="hook-sub">Same evolution engine. Any agent. Knowledge that compounds forever.</p>
+        <p class="hook-sub">One install. Five harnesses. Knowledge that compounds forever.</p>
         <div class="hook-install">
           <span class="hook-install-code">npm install -D wikiskill</span>
         </div>
@@ -367,7 +451,9 @@
           <div class="layer layer-wiki">
             <span class="layer-icon">🧠</span>
             <span class="layer-name">Wiki Layer</span>
-            <span class="layer-desc">Failure patterns &amp; success<br />strategies — never rolls back</span>
+            <span class="layer-desc"
+              >Failure patterns &amp; success<br />strategies — never rolls back</span
+            >
             <span class="layer-detail">wiki/patterns/*.md — compounds</span>
           </div>
           <span class="arrow">→</span>
@@ -395,11 +481,20 @@
           </div>
           <div class="terminal-body">
             <p><span class="prompt">$</span> /wiki-evolve</p>
-            <p class="output">→ Scanned <span class="metric">47 traces</span> across <span class="metric">3 sessions</span></p>
-            <p class="output">→ Found <span class="highlight">5 failure patterns</span> (3 recurring)</p>
+            <p class="output">
+              → Scanned <span class="metric">47 traces</span> across
+              <span class="metric">3 sessions</span>
+            </p>
+            <p class="output">
+              → Found <span class="highlight">5 failure patterns</span> (3 recurring)
+            </p>
             <p class="output">→ Extracted <span class="highlight">2 success strategies</span></p>
-            <p class="output">→ Created skill: <span class="highlight">api-error-recovery.md</span></p>
-            <p class="output">→ Updated skill: <span class="highlight">file-search-workflow.md</span></p>
+            <p class="output">
+              → Created skill: <span class="highlight">api-error-recovery.md</span>
+            </p>
+            <p class="output">
+              → Updated skill: <span class="highlight">file-search-workflow.md</span>
+            </p>
             <p class="success">✓ Score: 0.89 → accepted (best: 0.89)</p>
           </div>
         </div>
@@ -448,7 +543,10 @@
       <section id="scene-cta" class="clip" data-start="27" data-duration="3">
         <h2 class="cta-title">WikiSkill</h2>
         <code class="cta-repo">github.com/ranjithrajv/wikiskill</code>
-        <p class="cta-tagline">Harness-agnostic &middot; Based on Google Research &mdash; arXiv:2608.27454</p>
+        <p class="cta-tagline">
+          Harness-agnostic &middot; 5 adapters &middot; Based on Google Research &mdash;
+          arXiv:2608.27454
+        </p>
       </section>
     </div>
 
@@ -456,47 +554,171 @@
       const tl = gsap.timeline({ paused: true });
 
       // ─── Scene 1: Hook (0-5s) ────────────────────────────────────────
-      tl.from("#scene-hook .hook-badge", { y: -20, opacity: 0, duration: 0.3, stagger: 0.08, ease: "back.out(2)" }, 0.1);
-      tl.from("#scene-hook .hook-text", { y: 60, opacity: 0, duration: 0.5, ease: "power3.out" }, 0.4);
-      tl.from("#scene-hook .hook-sub", { y: 25, opacity: 0, duration: 0.35, ease: "power2.out" }, 0.75);
-      tl.from("#scene-hook .hook-install-code", { y: 20, opacity: 0, scale: 0.95, duration: 0.4, ease: "back.out(1.5)" }, 1.1);
+      tl.from(
+        "#scene-hook .hook-badge",
+        { y: -20, opacity: 0, duration: 0.3, stagger: 0.08, ease: "back.out(2)" },
+        0.1,
+      );
+      tl.from(
+        "#scene-hook .hook-text",
+        { y: 60, opacity: 0, duration: 0.5, ease: "power3.out" },
+        0.4,
+      );
+      tl.from(
+        "#scene-hook .hook-sub",
+        { y: 25, opacity: 0, duration: 0.35, ease: "power2.out" },
+        0.75,
+      );
+      tl.from(
+        "#scene-hook .hook-install-code",
+        { y: 20, opacity: 0, scale: 0.95, duration: 0.4, ease: "back.out(1.5)" },
+        1.1,
+      );
       tl.to("#scene-hook", { opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.in" }, 4.2);
 
       // ─── Scene 2: Architecture (5-11s) ──────────────────────────────
-      tl.from("#scene-arch .arch-title", { y: 25, opacity: 0, duration: 0.3, ease: "power2.out" }, 5.2);
-      tl.from("#scene-arch .layer-raw", { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" }, 5.5);
-      tl.from("#scene-arch .arrow:first-of-type", { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" }, 6.0);
-      tl.from("#scene-arch .layer-wiki", { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" }, 6.1);
-      tl.from("#scene-arch .arrow:last-of-type", { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" }, 6.6);
-      tl.from("#scene-arch .layer-skills", { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" }, 6.7);
-      tl.from("#scene-arch .loop-badge", { y: 15, opacity: 0, duration: 0.25, stagger: 0.1, ease: "power2.out" }, 7.3);
+      tl.from(
+        "#scene-arch .arch-title",
+        { y: 25, opacity: 0, duration: 0.3, ease: "power2.out" },
+        5.2,
+      );
+      tl.from(
+        "#scene-arch .layer-raw",
+        { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" },
+        5.5,
+      );
+      tl.from(
+        "#scene-arch .arrow:first-of-type",
+        { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" },
+        6.0,
+      );
+      tl.from(
+        "#scene-arch .layer-wiki",
+        { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" },
+        6.1,
+      );
+      tl.from(
+        "#scene-arch .arrow:last-of-type",
+        { opacity: 0, scale: 0, duration: 0.2, ease: "back.out(3)" },
+        6.6,
+      );
+      tl.from(
+        "#scene-arch .layer-skills",
+        { y: 70, opacity: 0, scale: 0.85, duration: 0.45, ease: "back.out(1.5)" },
+        6.7,
+      );
+      tl.from(
+        "#scene-arch .loop-badge",
+        { y: 15, opacity: 0, duration: 0.25, stagger: 0.1, ease: "power2.out" },
+        7.3,
+      );
       tl.to("#scene-arch", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 10.3);
 
       // ─── Scene 3: Terminal (11-18s) ─────────────────────────────────
-      tl.from("#scene-terminal .terminal", { y: 35, opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.out" }, 11.2);
-      tl.from("#scene-terminal .terminal-body p:nth-child(1)", { opacity: 0, x: -10, duration: 0.12 }, 11.7);
-      tl.from("#scene-terminal .terminal-body p:nth-child(2)", { opacity: 0, x: -10, duration: 0.12 }, 12.2);
-      tl.from("#scene-terminal .terminal-body p:nth-child(3)", { opacity: 0, x: -10, duration: 0.12 }, 12.8);
-      tl.from("#scene-terminal .terminal-body p:nth-child(4)", { opacity: 0, x: -10, duration: 0.12 }, 13.4);
-      tl.from("#scene-terminal .terminal-body p:nth-child(5)", { opacity: 0, x: -10, duration: 0.12 }, 14.0);
-      tl.from("#scene-terminal .terminal-body p:nth-child(6)", { opacity: 0, x: -10, duration: 0.12 }, 14.6);
-      tl.from("#scene-terminal .terminal-body p:nth-child(7)", { opacity: 0, x: -10, duration: 0.18 }, 15.5);
-      tl.to("#scene-terminal", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 17.3);
+      tl.from(
+        "#scene-terminal .terminal",
+        { y: 35, opacity: 0, scale: 0.95, duration: 0.3, ease: "power2.out" },
+        11.2,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(1)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        11.7,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(2)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        12.2,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(3)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        12.8,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(4)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        13.4,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(5)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        14.0,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(6)",
+        { opacity: 0, x: -10, duration: 0.12 },
+        14.6,
+      );
+      tl.from(
+        "#scene-terminal .terminal-body p:nth-child(7)",
+        { opacity: 0, x: -10, duration: 0.18 },
+        15.5,
+      );
+      tl.to(
+        "#scene-terminal",
+        { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" },
+        17.3,
+      );
 
       // ─── Scene 4: Before/After (18-27s) ─────────────────────────────
-      tl.from("#scene-beforeafter .ba-title", { y: 25, opacity: 0, duration: 0.3, ease: "power2.out" }, 18.2);
-      tl.from("#scene-beforeafter .ba-box-before", { x: -70, opacity: 0, scale: 0.9, duration: 0.4, ease: "power3.out" }, 18.7);
-      tl.from("#scene-beforeafter .ba-arrow", { scale: 0, opacity: 0, duration: 0.25, ease: "back.out(3)" }, 19.3);
-      tl.from("#scene-beforeafter .ba-box-after", { x: 70, opacity: 0, scale: 0.9, duration: 0.4, ease: "power3.out" }, 19.6);
-      tl.from("#scene-beforeafter .gain-badge", { scale: 0, rotation: -20, duration: 0.35, ease: "back.out(4)" }, 20.4);
-      tl.to("#scene-beforeafter .ba-box-after", { scale: 1.03, duration: 0.12, ease: "power2.out", yoyo: true, repeat: 1 }, 21.5);
-      tl.to("#scene-beforeafter .ba-box-after .ba-metric-value", { scale: 1.15, duration: 0.18, ease: "back.out(2)", yoyo: true, repeat: 1 }, 22.0);
-      tl.to("#scene-beforeafter", { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" }, 26.3);
+      tl.from(
+        "#scene-beforeafter .ba-title",
+        { y: 25, opacity: 0, duration: 0.3, ease: "power2.out" },
+        18.2,
+      );
+      tl.from(
+        "#scene-beforeafter .ba-box-before",
+        { x: -70, opacity: 0, scale: 0.9, duration: 0.4, ease: "power3.out" },
+        18.7,
+      );
+      tl.from(
+        "#scene-beforeafter .ba-arrow",
+        { scale: 0, opacity: 0, duration: 0.25, ease: "back.out(3)" },
+        19.3,
+      );
+      tl.from(
+        "#scene-beforeafter .ba-box-after",
+        { x: 70, opacity: 0, scale: 0.9, duration: 0.4, ease: "power3.out" },
+        19.6,
+      );
+      tl.from(
+        "#scene-beforeafter .gain-badge",
+        { scale: 0, rotation: -20, duration: 0.35, ease: "back.out(4)" },
+        20.4,
+      );
+      tl.to(
+        "#scene-beforeafter .ba-box-after",
+        { scale: 1.03, duration: 0.12, ease: "power2.out", yoyo: true, repeat: 1 },
+        21.5,
+      );
+      tl.to(
+        "#scene-beforeafter .ba-box-after .ba-metric-value",
+        { scale: 1.15, duration: 0.18, ease: "back.out(2)", yoyo: true, repeat: 1 },
+        22.0,
+      );
+      tl.to(
+        "#scene-beforeafter",
+        { opacity: 0, scale: 0.95, duration: 0.25, ease: "power2.in" },
+        26.3,
+      );
 
       // ─── Scene 5: CTA (27-30s) ──────────────────────────────────────
-      tl.from("#scene-cta .cta-title", { scale: 0, opacity: 0, duration: 0.25, ease: "back.out(3)" }, 27.2);
-      tl.from("#scene-cta .cta-repo", { y: 15, opacity: 0, duration: 0.25, ease: "power2.out" }, 27.7);
-      tl.from("#scene-cta .cta-tagline", { y: 12, opacity: 0, duration: 0.2, ease: "power2.out" }, 28.2);
+      tl.from(
+        "#scene-cta .cta-title",
+        { scale: 0, opacity: 0, duration: 0.25, ease: "back.out(3)" },
+        27.2,
+      );
+      tl.from(
+        "#scene-cta .cta-repo",
+        { y: 15, opacity: 0, duration: 0.25, ease: "power2.out" },
+        27.7,
+      );
+      tl.from(
+        "#scene-cta .cta-tagline",
+        { y: 12, opacity: 0, duration: 0.2, ease: "power2.out" },
+        28.2,
+      );
 
       window.__timelines["main"] = tl;
     </script>

@@ -27,6 +27,8 @@ import {
   syncClaudeCodeSkills,
   wireCodex,
   checkOpenCode,
+  wirePi,
+  wireHermes,
   detectInstalledHarnesses,
   snapshotSkills,
   diffSkillSnapshots,
@@ -221,7 +223,9 @@ async function cmdValidate(args: string[]): Promise<void> {
 
   const runner = VALIDATE_RUNNERS[harness];
   if (!runner) {
-    console.error(`[wikiskill] Unknown --harness "${harnessArg}". Expected: claude-code, codex, opencode.`);
+    console.error(
+      `[wikiskill] Unknown --harness "${harnessArg}". Expected: claude-code, codex, opencode.`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -234,7 +238,9 @@ async function cmdValidate(args: string[]): Promise<void> {
   const changedIds = diffSkillSnapshots(state.skillSnapshot, currentSnapshot);
 
   if (changedIds.length === 0) {
-    console.log("[wikiskill] No skill changes detected since `evolve-prompt` — nothing to validate.");
+    console.log(
+      "[wikiskill] No skill changes detected since `evolve-prompt` — nothing to validate.",
+    );
     state.evolving = false;
     await writeState(projectDir, state);
     await pruneTraces(tracesRoot(projectDir), 3);
@@ -336,7 +342,9 @@ async function cmdInit(args: string[]): Promise<void> {
   const quiet = args.includes("--quiet");
   const force: Harness[] = args.includes("--all")
     ? ALL_HARNESSES
-    : args.filter((a): a is keyof typeof FORCE_FLAGS => a in FORCE_FLAGS).map((a) => FORCE_FLAGS[a]);
+    : args
+        .filter((a): a is keyof typeof FORCE_FLAGS => a in FORCE_FLAGS)
+        .map((a) => FORCE_FLAGS[a]);
 
   const { harnesses, changes } = await runInit(projectDir, force, findFrameworkSkillPath());
 
@@ -344,8 +352,8 @@ async function cmdInit(args: string[]): Promise<void> {
   if (harnesses.length === 0) {
     if (!quiet) {
       console.log(
-        "[wikiskill] No harness config detected (.claude/, AGENTS.md, .codex/, opencode.jsonc).\n" +
-          "Run with --claude-code, --codex, --opencode, or --all to wire one explicitly.",
+        "[wikiskill] No harness config detected (.claude/, AGENTS.md, .codex/, .pi/, SOUL.md, opencode.jsonc).\n" +
+          "Run with --claude-code, --codex, --opencode, --pi, --hermes, or --all to wire one explicitly.",
       );
     }
     return;
@@ -405,7 +413,7 @@ async function cmdOpen(args: string[]): Promise<void> {
   const installed = detectInstalledHarnesses();
   if (installed.length === 0) {
     console.error(
-      "[wikiskill] No supported harness found on PATH (looked for: claude, codex, opencode).\n" +
+      "[wikiskill] No supported harness found on PATH (looked for: claude, codex, opencode, pi, hermes).\n" +
         "Install one, then run `wikiskill open` again.",
     );
     process.exitCode = 1;
@@ -435,7 +443,11 @@ async function cmdOpen(args: string[]): Promise<void> {
       ? await wireClaudeCode(projectDir, findFrameworkSkillPath())
       : target.harness === "codex"
         ? await wireCodex(projectDir)
-        : await checkOpenCode(projectDir);
+        : target.harness === "pi"
+          ? await wirePi(projectDir)
+          : target.harness === "hermes"
+            ? await wireHermes(projectDir)
+            : await checkOpenCode(projectDir);
   for (const c of changes) console.log(`[wikiskill] ${c}`);
 
   console.log(`[wikiskill] opening ${target.command}...`);
@@ -471,8 +483,9 @@ async function main(): Promise<void> {
     default:
       console.error(
         "Usage: wikiskill <trace|trace-manual|status|evolve-prompt|validate|evolve-complete|reset|init|open> [--project DIR]\n" +
-          "  wikiskill validate [--harness claude-code|codex|opencode] [--timeout-ms N] [--bench-limit N]\n" +
-          "  wikiskill open [claude|codex|opencode] [-- <harness args>]",
+          "  wikiskill validate [--harness claude-code|codex|opencode|pi|hermes] [--timeout-ms N] [--bench-limit N]\n" +
+          "  wikiskill open [claude|codex|opencode|pi|hermes] [-- <harness args>]\n" +
+          "  wikiskill init [--claude-code|--codex|--opencode|--pi|--hermes|--all]",
       );
       process.exitCode = 1;
   }

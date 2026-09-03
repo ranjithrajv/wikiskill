@@ -84,7 +84,10 @@ Run \`npx wikiskill reset\` and show the output to the user.
  * top-level `skills/` directory is NOT auto-discovered). Writes only what
  * changed, so this is safe to call on every init/open/validate.
  */
-export async function syncClaudeCodeSkills(projectDir: string, frameworkSkillPath?: string): Promise<string[]> {
+export async function syncClaudeCodeSkills(
+  projectDir: string,
+  frameworkSkillPath?: string,
+): Promise<string[]> {
   const changes: string[] = [];
   const destDir = path.join(projectDir, ".claude", "skills");
 
@@ -105,14 +108,20 @@ export async function syncClaudeCodeSkills(projectDir: string, frameworkSkillPat
   const evolvedFiles = (await exists(evolvedDir)) ? await fs.readdir(evolvedDir) : [];
   for (const file of evolvedFiles) {
     if (!file.endsWith(".md")) continue;
-    await syncOne(file.replace(/\.md$/, ""), await fs.readFile(path.join(evolvedDir, file), "utf-8"));
+    await syncOne(
+      file.replace(/\.md$/, ""),
+      await fs.readFile(path.join(evolvedDir, file), "utf-8"),
+    );
   }
 
   return changes;
 }
 
 /** Wire the Claude Code adapter: merge the PostToolUse hook, add slash commands, sync skills. */
-export async function wireClaudeCode(projectDir: string, frameworkSkillPath?: string): Promise<string[]> {
+export async function wireClaudeCode(
+  projectDir: string,
+  frameworkSkillPath?: string,
+): Promise<string[]> {
   const changes: string[] = [];
   const claudeDir = path.join(projectDir, ".claude");
   await fs.mkdir(claudeDir, { recursive: true });
@@ -195,7 +204,10 @@ export async function wireCodex(projectDir: string): Promise<string[]> {
   const agentsPath = path.join(projectDir, "AGENTS.md");
   const current = (await exists(agentsPath)) ? await fs.readFile(agentsPath, "utf-8") : "";
   if (!current.includes(CODEX_AGENTS_MARKER)) {
-    const next = current.trim().length > 0 ? `${current.trimEnd()}\n\n${CODEX_AGENTS_BLOCK}` : CODEX_AGENTS_BLOCK;
+    const next =
+      current.trim().length > 0
+        ? `${current.trimEnd()}\n\n${CODEX_AGENTS_BLOCK}`
+        : CODEX_AGENTS_BLOCK;
     await fs.writeFile(agentsPath, next, "utf-8");
     changes.push(`appended WikiSkill section to ${agentsPath}`);
   }
@@ -279,7 +291,8 @@ export async function wirePi(projectDir: string): Promise<string[]> {
     ? await fs.readFile(instructionsPath, "utf-8")
     : "";
   if (!current.includes(PI_MARKER)) {
-    const next = current.trim().length > 0 ? `${current.trimEnd()}\n\n${PI_INSTRUCTIONS}` : PI_INSTRUCTIONS;
+    const next =
+      current.trim().length > 0 ? `${current.trimEnd()}\n\n${PI_INSTRUCTIONS}` : PI_INSTRUCTIONS;
     await fs.writeFile(instructionsPath, next, "utf-8");
     changes.push(`wrote WikiSkill instructions to ${instructionsPath}`);
   }
@@ -335,9 +348,7 @@ export async function wireHermes(projectDir: string): Promise<string[]> {
 
   // Append to SOUL.md (Hermes' personality/instructions file)
   const soulPath = path.join(projectDir, "SOUL.md");
-  const currentSoul = (await exists(soulPath))
-    ? await fs.readFile(soulPath, "utf-8")
-    : "";
+  const currentSoul = (await exists(soulPath)) ? await fs.readFile(soulPath, "utf-8") : "";
   if (!currentSoul.includes(HERMES_MARKER)) {
     const next =
       currentSoul.trim().length > 0
@@ -376,7 +387,8 @@ export async function runInit(
   const targets = new Set<Harness>([...detected, ...force]);
   const changes: string[] = [];
 
-  if (targets.has("claude-code")) changes.push(...(await wireClaudeCode(projectDir, frameworkSkillPath)));
+  if (targets.has("claude-code"))
+    changes.push(...(await wireClaudeCode(projectDir, frameworkSkillPath)));
   if (targets.has("codex")) changes.push(...(await wireCodex(projectDir)));
   if (targets.has("opencode")) changes.push(...(await checkOpenCode(projectDir)));
   if (targets.has("pi")) changes.push(...(await wirePi(projectDir)));

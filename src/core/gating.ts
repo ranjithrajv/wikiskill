@@ -197,7 +197,15 @@ export async function runValidationGate(
 ): Promise<ValidationGateResult> {
   const allTasks = await listBenchTasks(projectDir);
   if (allTasks.length === 0) {
-    return { ranBench: false, total: 0, passed: 0, score: 0, bestScore, accepted: false, taskResults: [] };
+    return {
+      ranBench: false,
+      total: 0,
+      passed: 0,
+      score: 0,
+      bestScore,
+      accepted: false,
+      taskResults: [],
+    };
   }
   const tasks = opts.limit ? allTasks.slice(0, opts.limit) : allTasks;
   const timeoutMs = opts.timeoutMs ?? 120_000;

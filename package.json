@@ -5,13 +5,13 @@
   "bin": {
     "wikiskill": "./dist/cli.mjs"
   },
-  "type": "module",
   "files": [
     "dist",
     "src",
     "skills",
     "scripts/postinstall.mjs"
   ],
+  "type": "module",
   "exports": {
     ".": "./src/adapters/opencode/index.ts",
     "./rpc": "./src/adapters/opencode/rpc.ts",

@@ -68,7 +68,11 @@ export async function makeTaskWorkDir(taskId: string): Promise<string> {
 }
 
 /** Run a task's verify script against its work dir. Exit 0 = pass. */
-export function runVerify(verifyPath: string, workDir: string, timeoutMs: number): Promise<boolean> {
+export function runVerify(
+  verifyPath: string,
+  workDir: string,
+  timeoutMs: number,
+): Promise<boolean> {
   return new Promise((resolve) => {
     const child = spawn(verifyPath, [], { cwd: workDir, stdio: "ignore" });
     const timer = setTimeout(() => {

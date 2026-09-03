@@ -254,7 +254,10 @@ export async function snapshotSkills(skillsDir: string): Promise<Record<string, 
  * snapshots — how `wikiskill validate` finds what the Skill Proposer just
  * touched without the proposer having to report it back separately.
  */
-export function diffSkillSnapshots(before: Record<string, string>, after: Record<string, string>): string[] {
+export function diffSkillSnapshots(
+  before: Record<string, string>,
+  after: Record<string, string>,
+): string[] {
   const changed: string[] = [];
   for (const [file, hash] of Object.entries(after)) {
     if (before[file] !== hash) changed.push(file.replace(/\.md$/, ""));

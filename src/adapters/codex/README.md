@@ -42,6 +42,6 @@ npm install --save-dev wikiskill
 Because Codex has no live hook, its Raw layer is lower-fidelity than the
 other two adapters — it only captures what the agent chooses to log. Storage
 layout (`.wikiskill/{raw,wiki,skills}`) is identical across all three, but
-*loading* skills isn't: Claude Code needs them synced to `.claude/skills/`,
+_loading_ skills isn't: Claude Code needs them synced to `.claude/skills/`,
 OpenCode registers them via a live plugin API call, and Codex just reads
 `.wikiskill/skills/*.md` as plain files per the AGENTS.md instructions above.

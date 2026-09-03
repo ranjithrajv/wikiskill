@@ -7,15 +7,18 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-plugin-blue.svg)](https://opencode.ai)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-adapter-blue.svg)](https://claude.ai/code)
 [![Codex CLI](https://img.shields.io/badge/Codex%20CLI-adapter-blue.svg)](https://developers.openai.com/codex)
+[![Pi](https://img.shields.io/badge/Pi-adapter-blue.svg)](https://pi.dev)
+[![Hermes](https://img.shields.io/badge/Hermes-adapter-blue.svg)](https://hermes-agent.nousresearch.com)
 
 Harness-agnostic by design: the evolution engine (`src/core/`) is plain
-filesystem + prompt text with zero framework dependencies. Three adapters
+filesystem + prompt text with zero framework dependencies. Five adapters
 wire it into the harness's own hook/command mechanism — **OpenCode** (native
 plugin, skills registered via `ctx.skill.transform()`), **Claude Code**
 (hooks + slash commands, skills synced to `.claude/skills/<id>/SKILL.md`),
-and **Codex CLI** (AGENTS.md + custom prompts, skills read as plain files —
-Codex has no native skill-loading convention). Same `.wikiskill/` storage
-across all three; *loading* skills is adapter-specific, handled automatically.
+**Codex CLI** (AGENTS.md + custom prompts, skills read as plain files —
+Codex has no native skill-loading convention), **Pi** (`.pi/` + skills),
+and **Hermes** (`SOUL.md` + skills). Same `.wikiskill/` storage
+across all five; _loading_ skills is adapter-specific, handled automatically.
 
 Based on [WikiSkill: Compiling Agent Experience into Persistent Knowledge for Skill Evolution](https://arxiv.org/abs/2608.27454) (Tang et al., 2026, Google Research).
 
@@ -75,13 +78,15 @@ comments included — so `init` checks it but won't auto-edit it): add
 Re-running `npx wikiskill init` any time (or another `npm install`) is safe —
 it only fills in what's missing.
 
-| Harness | What `init` wires |
-|---|---|
+| Harness         | What `init` wires                                                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Claude Code** | `.claude/settings.json` `PostToolUse` hook (trace capture) + `.claude/commands/wiki-{evolve,status,reset}.md` + syncs skills to `.claude/skills/<id>/SKILL.md` |
-| **Codex CLI** | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md` |
-| **OpenCode** | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing |
+| **Codex CLI**   | `AGENTS.md` WikiSkill section (self-instrumented tracing) + `.codex/prompts/wiki-{evolve,status,reset}.md`                                                     |
+| **Pi**          | `.pi/wikiskill.md` instructions + `.pi/skills/wikiskill/*.md`                                                                                                  |
+| **Hermes**      | `SOUL.md` WikiSkill section + `.hermes/skills/wikiskill/*.md`                                                                                                  |
+| **OpenCode**    | Checks `opencode.jsonc`/`.json` for the plugin entry, prints a reminder if missing                                                                             |
 
-Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md).
+Details per adapter: [`src/adapters/claude-code/README.md`](./src/adapters/claude-code/README.md), [`src/adapters/codex/README.md`](./src/adapters/codex/README.md), [`src/adapters/pi/README.md`](./src/adapters/pi/README.md), [`src/adapters/hermes/README.md`](./src/adapters/hermes/README.md).
 
 ### One command to open your agent
 
@@ -185,8 +190,8 @@ npx wikiskill validate [--harness claude-code] [--timeout-ms 120000] [--bench-li
 
 ### Three-Layer Architecture
 
-| Layer      | Directory                     | Purpose                                   | Mutability            |
-| ---------- | ----------------------------- | ----------------------------------------- | --------------------- |
+| Layer      | Directory            | Purpose                                   | Mutability            |
+| ---------- | -------------------- | ----------------------------------------- | --------------------- |
 | **Raw**    | `.wikiskill/raw/`    | Execution traces from tool calls          | Immutable             |
 | **Wiki**   | `.wikiskill/wiki/`   | Persistent patterns, logs, impact tracker | **Never rolled back** |
 | **Skills** | `.wikiskill/skills/` | Evolved procedural instructions           | Updated with gating   |
